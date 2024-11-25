@@ -1,5 +1,6 @@
 package com.example.selfstudybe.models;
 
+import com.example.selfstudybe.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,10 +27,7 @@ public class UserTeam {
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
-/*
- TODO [Reverse Engineering] create field to map the 'role' column
- Available actions: Define target Java type | Uncomment as is | Remove column mapping
-    @Column(name = "role", columnDefinition = ""teamRole" not null")
-    private Object role;
-*/
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private TeamRole role;
 }

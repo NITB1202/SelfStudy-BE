@@ -15,7 +15,7 @@ import java.util.UUID;
 @Setter
 @Embeddable
 public class UserTeamId implements Serializable {
-    private static final long serialVersionUID = 7481257759047959998L;
+//    private static final long serialVersionUID = 7481257759047959998L;
     @NotNull
     @Column(name = "user_id", nullable = false)
     private UUID userId;

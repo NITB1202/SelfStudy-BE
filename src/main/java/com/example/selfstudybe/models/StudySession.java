@@ -1,5 +1,6 @@
 package com.example.selfstudybe.models;
 
+import com.example.selfstudybe.enums.SessionStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -35,10 +36,7 @@ public class StudySession {
     @Column(name = "duration", nullable = false)
     private LocalTime duration;
 
-/*
- TODO [Reverse Engineering] create field to map the 'state' column
- Available actions: Define target Java type | Uncomment as is | Remove column mapping
-    @Column(name = "state", columnDefinition = ""sessionStatus" not null")
-    private Object state;
-*/
+    @Enumerated(EnumType.STRING)
+    @Column(name = "state", nullable = false)
+    private SessionStatus state;
 }

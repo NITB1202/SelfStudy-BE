@@ -1,5 +1,6 @@
 package com.example.selfstudybe.models;
 
+import com.example.selfstudybe.enums.PlanStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -57,10 +58,7 @@ public class Plan {
             inverseJoinColumns = @JoinColumn(name = "team_id"))
     private Set<Team> teams = new LinkedHashSet<>();
 
-/*
- TODO [Reverse Engineering] create field to map the 'status' column
- Available actions: Define target Java type | Uncomment as is | Remove column mapping
-    @Column(name = "status", columnDefinition = ""planStatus" not null")
-    private Object status;
-*/
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private PlanStatus status;
 }

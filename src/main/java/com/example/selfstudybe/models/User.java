@@ -1,5 +1,6 @@
 package com.example.selfstudybe.models;
 
+import com.example.selfstudybe.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -36,10 +37,7 @@ public class User {
     @Column(name = "avatar_link", length = Integer.MAX_VALUE)
     private String avatarLink;
 
-/*
- TODO [Reverse Engineering] create field to map the 'role' column
- Available actions: Define target Java type | Uncomment as is | Remove column mapping
-    @Column(name = "role", columnDefinition = "role not null")
-    private Object role;
-*/
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role;
 }

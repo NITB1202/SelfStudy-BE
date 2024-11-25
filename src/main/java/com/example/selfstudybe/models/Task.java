@@ -1,5 +1,6 @@
 package com.example.selfstudybe.models;
 
+import com.example.selfstudybe.enums.TaskStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -31,10 +32,6 @@ public class Task {
     @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
     private String name;
 
-/*
- TODO [Reverse Engineering] create field to map the 'status' column
- Available actions: Define target Java type | Uncomment as is | Remove column mapping
-    @Column(name = "status", columnDefinition = ""taskStatus" not null")
-    private Object status;
-*/
+    @Column(name = "status", nullable = false)
+    private TaskStatus status;
 }
