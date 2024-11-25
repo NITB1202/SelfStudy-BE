@@ -9,7 +9,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @Getter
 @Setter
 @Entity
-@Table(name = "\"Team_Subject\"")
+@Table(name = "team_subject")
 public class TeamSubject {
     @EmbeddedId
     private TeamSubjectId id;

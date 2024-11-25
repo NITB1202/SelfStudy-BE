@@ -15,7 +15,7 @@ import java.util.UUID;
 @Setter
 @Embeddable
 public class PlanUserId implements Serializable {
-    private static final long serialVersionUID = 6474067494125747588L;
+//    private static final long serialVersionUID = 6474067494125747588L;
     @NotNull
     @Column(name = "plan_id", nullable = false)
     private UUID planId;
