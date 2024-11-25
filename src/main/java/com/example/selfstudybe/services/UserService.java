@@ -1,6 +1,7 @@
 package com.example.selfstudybe.services;
 
 import com.example.selfstudybe.dtos.User.UserDto;
+import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.repositories.UserRepository;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,8 @@ public class UserService {
 
     public UserDto getUserByEmail(String email) {
         User user = userRepository.findByEmail(email);
-        if(user == null) return null;
+        if(user == null)
+            throw new CustomNotFoundException("Cannot find user with email " + email);
         return UserToDto(user);
     }
 }
