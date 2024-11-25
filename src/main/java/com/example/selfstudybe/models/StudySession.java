@@ -1,0 +1,44 @@
+package com.example.selfstudybe.models;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.LocalTime;
+import java.util.UUID;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "\"StudySession\"")
+public class StudySession {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @ColumnDefault("gen_random_uuid()")
+    @Column(name = "session_id", nullable = false)
+    private UUID id;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
+    @NotNull
+    @Column(name = "duration", nullable = false)
+    private LocalTime duration;
+
+/*
+ TODO [Reverse Engineering] create field to map the 'state' column
+ Available actions: Define target Java type | Uncomment as is | Remove column mapping
+    @Column(name = "state", columnDefinition = ""sessionStatus" not null")
+    private Object state;
+*/
+}
