@@ -4,8 +4,8 @@ import com.example.selfstudybe.dtos.Authentication.AuthRequest;
 import com.example.selfstudybe.dtos.Authentication.AuthResponse;
 import com.example.selfstudybe.dtos.Authentication.GoogleResponse;
 import com.example.selfstudybe.dtos.Authentication.UserInfo;
-import com.example.selfstudybe.dtos.User.CreateUserDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
+import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.security.CustomAuthenticationManager;
 import com.example.selfstudybe.services.UserService;
@@ -32,8 +32,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,7 +43,7 @@ public class AuthenticationController {
     private final CustomAuthenticationManager authenticationManager;
     private final ClientRegistrationRepository clientRegistrationRepository;
 
-    @PostMapping(value ="login", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("login")
     @Operation(summary = "Login")
     @ApiResponse(responseCode = "200", description = "Login successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body")
@@ -81,18 +79,10 @@ public class AuthenticationController {
         String email = authentication.getPrincipal().toString();
         User user = userService.getUserByEmail(email);
 
-        // Generate tokens
-        String newAccessToken = JwtUtil.generateAccessToken(user.getId(),user.getEmail(),user.getRole().toString());
-        String refreshToken = JwtUtil.generateRefreshToken(user.getId());
-
         // Generate cookies
-        Cookie accessCookie = JwtUtil.generateCookie("access_token", newAccessToken);
-        Cookie refreshCookie = JwtUtil.generateCookie("refresh_token", refreshToken);
+        AuthResponse authResponse = generateCookies(user,response);
 
-        response.addCookie(accessCookie);
-        response.addCookie(refreshCookie);
-
-        return ResponseEntity.ok(new AuthResponse(newAccessToken));
+        return ResponseEntity.ok(authResponse);
     }
 
     @GetMapping
@@ -125,9 +115,9 @@ public class AuthenticationController {
         return ResponseEntity.ok("Logout successful");
     }
 
-    @GetMapping("login/google")
-    @Operation(summary = "Login with google account")
-    @ApiResponse(responseCode = "200", description = "Get google authentication url")
+    @GetMapping("google")
+    @Operation(summary = "Get google authentication URL")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
     public ResponseEntity<String> loginWithGoogle() {
         // Extract client's information
         ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("google");
@@ -144,7 +134,16 @@ public class AuthenticationController {
 
     @Hidden
     @GetMapping("oauth2callback")
-    public ResponseEntity<?> oauth2Callback(@RequestParam("code") String code){
+    public ResponseEntity<String> oauth2Callback(@RequestParam("code") String code){
+        return ResponseEntity.ok("Authorization code: "+ code);
+    }
+
+    @GetMapping("code")
+    @Operation(summary = "Login with google authorization code")
+    @ApiResponse(responseCode = "200", description = "Login successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Not exists")
+    public ResponseEntity<?> loginWithGoogle(@RequestParam String code, HttpServletResponse response) throws JOSEException {
         // Extract client's information
         ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("google");
 
@@ -159,38 +158,52 @@ public class AuthenticationController {
                 .queryParam("redirect_uri", clientRegistration.getRedirectUri());
 
         RestTemplate restTemplate = new RestTemplate();
-        GoogleResponse response = restTemplate.postForObject(uriBuilder.toUriString(), null, GoogleResponse.class);
+        GoogleResponse googleResponse = restTemplate.postForObject(uriBuilder.toUriString(), null, GoogleResponse.class);
 
-        if(response!= null) {
+        if(googleResponse!= null) {
             // Extract access token from response
-            String accessToken = response.getAccess_token();
+            String accessToken = googleResponse.getAccess_token();
+
+            // Get user's information
             UserInfo userInfo = getUserInfoFromGoogle(accessToken);
             String email = userInfo.getEmail();
-
-            // Get full information
             User user = userService.getUserByEmail(email);
-
             if(user == null)
-                throw new CustomBadRequestException("This user hasn't registered yet");
+                throw new CustomNotFoundException("This user hasn't registered yet");
 
-            //Set authentication
+            // Set authentication
             List<GrantedAuthority> roles = List.of(new SimpleGrantedAuthority(user.getRole().toString()));
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword(),roles);
-
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword(), roles);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Generate tokens
             // Generate cookies
+            AuthResponse authResponse = generateCookies(user,response);
 
-            return ResponseEntity.ok(userInfo);
+            return ResponseEntity.ok(authResponse);
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Can't find access token");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid authorization code");
     }
 
     private UserInfo getUserInfoFromGoogle(String accessToken) {
         String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
         RestTemplate restTemplate = new RestTemplate();
         return restTemplate.getForObject(userInfoUrl + "?access_token=" + accessToken, UserInfo.class);
+    }
+
+    private AuthResponse generateCookies(User user, HttpServletResponse response) throws JOSEException {
+        // Generate tokens
+        String accessToken = JwtUtil.generateAccessToken(user.getId(),user.getEmail(),user.getRole().toString());
+        String refreshToken = JwtUtil.generateRefreshToken(user.getId());
+
+        // Generate cookies
+        Cookie accessCookie = JwtUtil.generateCookie("access_token", accessToken);
+        Cookie refreshCookie = JwtUtil.generateCookie("refresh_token", refreshToken);
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        return new AuthResponse(accessToken);
     }
 }
