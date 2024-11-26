@@ -7,6 +7,8 @@ import com.example.selfstudybe.repositories.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @AllArgsConstructor
 public class UserService {
@@ -21,10 +23,14 @@ public class UserService {
         );
     }
 
-    public UserDto getUserByEmail(String email) {
+    public User getUserByEmail(String email) {
         User user = userRepository.findByEmail(email);
         if(user == null)
             throw new CustomNotFoundException("Cannot find user with email " + email);
-        return UserToDto(user);
+        return user;
+    }
+
+    public User getUserByUserId(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Cannot find user with id " + userId));
     }
 }
