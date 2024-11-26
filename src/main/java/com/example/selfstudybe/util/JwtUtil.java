@@ -11,14 +11,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Date;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
+
 
 public class JwtUtil {
-    @Value("${jwt.key}")
-    public static String KEY;
-
-    @Value("${jwt.issuer}")
-    public static String ISSUER;
+    public static String KEY = "QqfjfskhafhajkfhsafjhsaadsakfalfsuiKj";
+    public static String ISSUER = "auth-server";
 
     public static JwtDecoder getJwtDecoder() {
         SecretKey secretKey = new SecretKeySpec(KEY.getBytes(), "HmacSHA256");
