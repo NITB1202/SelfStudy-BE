@@ -1,24 +1,27 @@
 package com.example.selfstudybe.controllers;
 
-import com.example.selfstudybe.dtos.Authentication.AuthRequest;
-import com.example.selfstudybe.dtos.Authentication.AuthResponse;
-import com.example.selfstudybe.dtos.Authentication.GoogleResponse;
-import com.example.selfstudybe.dtos.Authentication.UserInfo;
+import com.example.selfstudybe.dtos.Authentication.*;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
+import com.example.selfstudybe.exception.ErrorResponse;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.security.CustomAuthenticationManager;
+import com.example.selfstudybe.services.EmailService;
 import com.example.selfstudybe.services.UserService;
 import com.example.selfstudybe.util.JwtUtil;
 import com.nimbusds.jose.JOSEException;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,7 +35,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.Duration;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @RestController
@@ -42,11 +48,16 @@ public class AuthenticationController {
     private final UserService userService;
     private final CustomAuthenticationManager authenticationManager;
     private final ClientRegistrationRepository clientRegistrationRepository;
+    private final EmailService emailService;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    @PostMapping("login")
+    private final int waitMinutes = 2;
+
+    @PostMapping(value ="login", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Login")
     @ApiResponse(responseCode = "200", description = "Login successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid request body")
+    @ApiResponse(responseCode = "400", description = "Invalid request body", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     public ResponseEntity<AuthResponse> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "All fields are required")@Valid @RequestBody AuthRequest authRequest, BindingResult bindingResult,
                                               HttpServletRequest request, HttpServletResponse response ) throws JOSEException {
@@ -63,7 +74,10 @@ public class AuthenticationController {
 
         // If access token already exists in cookie
         if(accessToken != null && JwtUtil.validateAccessToken(accessToken))
-            return ResponseEntity.ok(new AuthResponse(accessToken));
+        {
+            String refreshToken = JwtUtil.extractRefreshTokenFromCookie(request);
+            return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken));
+        }
 
         // If access token don't exist, then create a new one
         UsernamePasswordAuthenticationToken authenticationToken =
@@ -85,14 +99,16 @@ public class AuthenticationController {
         return ResponseEntity.ok(authResponse);
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get current login user's information")
     @ApiResponse(responseCode = "200", description = "Get successfully")
-    public ResponseEntity<?> getUser() {
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<User> getUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getPrincipal().toString();
         if(email.equals("anonymousUser"))
-            return ResponseEntity.ok("No user has logged in");
+            throw new CustomNotFoundException("No user has logged in");
         User user = userService.getUserByEmail(email);
         return ResponseEntity.ok(user);
     }
@@ -100,7 +116,7 @@ public class AuthenticationController {
     @GetMapping("logout")
     @Operation(summary = "Log out of the current account")
     @ApiResponse(responseCode = "200", description = "Logout successfully")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
+    public ResponseEntity<String> logout(HttpServletResponse response) {
         Cookie accessTokenCookie = new Cookie("access_token", null);
         accessTokenCookie.setMaxAge(0);
         accessTokenCookie.setPath("/");
@@ -115,7 +131,7 @@ public class AuthenticationController {
         return ResponseEntity.ok("Logout successful");
     }
 
-    @GetMapping("google")
+    @GetMapping(value = "google", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get google authentication URL")
     @ApiResponse(responseCode = "200", description = "Get successfully")
     public ResponseEntity<String> loginWithGoogle() {
@@ -138,12 +154,14 @@ public class AuthenticationController {
         return ResponseEntity.ok("Authorization code: "+ code);
     }
 
-    @GetMapping("code")
+    @GetMapping(value= "code", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Login with google authorization code")
     @ApiResponse(responseCode = "200", description = "Login successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
-    @ApiResponse(responseCode = "404", description = "Not exists")
-    public ResponseEntity<?> loginWithGoogle(@RequestParam String code, HttpServletResponse response) throws JOSEException {
+    @ApiResponse(responseCode = "400", description = "Invalid request", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    @ApiResponse(responseCode = "404", description = "Not exists", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<AuthResponse> loginWithGoogle(@RequestParam String code, HttpServletResponse response) throws JOSEException {
         // Extract client's information
         ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("google");
 
@@ -183,7 +201,52 @@ public class AuthenticationController {
             return ResponseEntity.ok(authResponse);
         }
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid authorization code");
+        throw new CustomBadRequestException("Invalid authorization code");
+    }
+
+    @GetMapping("mail")
+    @Operation(summary = "Send a verification code to the user's email address")
+    @ApiResponse(responseCode = "200", description = "Send successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid format", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<String> sendVerificationCode(@Valid @RequestParam @Email String email) {
+        // Generate random code
+        String code = generateRandomCode();
+
+        // Save code into Redis database
+        redisTemplate.opsForValue().set(email, code, Duration.ofMinutes(waitMinutes));
+
+        // Send verification to user's email address
+        emailService.sendMail(email,"Verification", "Your verification code is " + code);
+        return ResponseEntity.ok("Verification code sent");
+    }
+
+    @PostMapping("verify")
+    @Operation(summary = "Verify authentication")
+    @ApiResponse(responseCode = "200", description = "Success")
+    @ApiResponse(responseCode = "400", description = "Fail", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<String> verify(@Valid @RequestBody VerificationRequest verificationRequest, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errors = bindingResult.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .collect(Collectors.toList());
+            throw new CustomBadRequestException(String.join(", ", errors));
+        }
+
+        String storedCode = redisTemplate.opsForValue().get(verificationRequest.getEmail());
+        if(storedCode != null && storedCode.equals(verificationRequest.getCode())) {
+            redisTemplate.delete(verificationRequest.getEmail());
+            return ResponseEntity.ok("Verification successful");
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Verification failed");
+    }
+
+    private String generateRandomCode() {
+        int randomNum = 1000 + new Random().nextInt(9000);
+        return String.valueOf(randomNum);
     }
 
     private UserInfo getUserInfoFromGoogle(String accessToken) {
@@ -204,6 +267,6 @@ public class AuthenticationController {
         response.addCookie(accessCookie);
         response.addCookie(refreshCookie);
 
-        return new AuthResponse(accessToken);
+        return new AuthResponse(accessToken, refreshToken);
     }
 }
