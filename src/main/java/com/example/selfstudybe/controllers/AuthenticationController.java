@@ -1,6 +1,10 @@
 package com.example.selfstudybe.controllers;
 
-import com.example.selfstudybe.dtos.Authentication.*;
+import com.example.selfstudybe.dtos.Authentication.Request.AuthRequest;
+import com.example.selfstudybe.dtos.Authentication.Request.VerificationRequest;
+import com.example.selfstudybe.dtos.Authentication.Response.AuthResponse;
+import com.example.selfstudybe.dtos.Authentication.Response.GoogleResponse;
+import com.example.selfstudybe.dtos.Authentication.Response.UserInfo;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.exception.ErrorResponse;
@@ -50,7 +54,6 @@ public class AuthenticationController {
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final EmailService emailService;
     private final RedisTemplate<String, String> redisTemplate;
-
     private final int waitMinutes = 2;
 
     @PostMapping(value ="login", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -58,8 +61,8 @@ public class AuthenticationController {
     @ApiResponse(responseCode = "200", description = "Login successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<AuthResponse> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "All fields are required")@Valid @RequestBody AuthRequest authRequest, BindingResult bindingResult,
+    public ResponseEntity<AuthResponse> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
+                                                  @Valid @RequestBody AuthRequest authRequest, BindingResult bindingResult,
                                               HttpServletRequest request, HttpServletResponse response ) throws JOSEException {
         // If inputs are invalid
         if (bindingResult.hasErrors()) {
@@ -131,7 +134,7 @@ public class AuthenticationController {
         return ResponseEntity.ok("Logout successful");
     }
 
-    @GetMapping(value = "google", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "google")
     @Operation(summary = "Get google authentication URL")
     @ApiResponse(responseCode = "200", description = "Get successfully")
     public ResponseEntity<String> loginWithGoogle() {
@@ -154,14 +157,17 @@ public class AuthenticationController {
         return ResponseEntity.ok("Authorization code: "+ code);
     }
 
-    @GetMapping(value= "code", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value= "code", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Login with google authorization code")
     @ApiResponse(responseCode = "200", description = "Login successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     @ApiResponse(responseCode = "404", description = "Not exists", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<AuthResponse> loginWithGoogle(@RequestParam String code, HttpServletResponse response) throws JOSEException {
+    public ResponseEntity<AuthResponse> loginWithGoogle(@RequestBody String code, HttpServletResponse response) throws JOSEException {
+        if(code == null || code.isBlank())
+            throw new CustomBadRequestException("Invalid code");
+
         // Extract client's information
         ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("google");
 
@@ -226,7 +232,8 @@ public class AuthenticationController {
     @ApiResponse(responseCode = "200", description = "Success")
     @ApiResponse(responseCode = "400", description = "Fail", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<String> verify(@Valid @RequestBody VerificationRequest verificationRequest, BindingResult bindingResult) {
+    public ResponseEntity<String> verify(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
+                                             @Valid @RequestBody VerificationRequest verificationRequest, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             List<String> errors = bindingResult.getFieldErrors()
                     .stream()

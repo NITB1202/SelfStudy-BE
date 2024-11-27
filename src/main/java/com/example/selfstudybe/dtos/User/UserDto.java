@@ -6,7 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-public record UserDto(String email, String username, String avatarLink,
+public record UserDto(UUID id, String email, String username, String avatarLink,
                       @JsonFormat(shape = JsonFormat.Shape.STRING) Role role) implements Serializable {
 }

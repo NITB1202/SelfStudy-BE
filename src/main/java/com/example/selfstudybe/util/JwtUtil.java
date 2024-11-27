@@ -110,8 +110,7 @@ public class JwtUtil {
         }
     }
 
-    public static Cookie generateCookie(String name, String token)
-    {
+    public static Cookie generateCookie(String name, String token) {
         Cookie cookie = new Cookie(name, token);
         cookie.setHttpOnly(true);
         cookie.setMaxAge(86400); // 1 day

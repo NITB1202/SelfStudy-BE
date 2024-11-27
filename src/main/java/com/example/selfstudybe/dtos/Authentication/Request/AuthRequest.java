@@ -1,4 +1,4 @@
-package com.example.selfstudybe.dtos.Authentication;
+package com.example.selfstudybe.dtos.Authentication.Request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
