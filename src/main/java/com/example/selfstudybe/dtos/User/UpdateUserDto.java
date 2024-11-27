@@ -27,7 +27,5 @@ public class UpdateUserDto implements Serializable {
     @Pattern(regexp = "^[a-zA-Z0-9]*$", message = "Password must not contain special characters")
     private final String password;
 
-    private final String avatarLink;
-
     private final Role role;
 }

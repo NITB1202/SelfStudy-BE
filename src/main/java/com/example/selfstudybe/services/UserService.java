@@ -1,5 +1,7 @@
 package com.example.selfstudybe.services;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.selfstudybe.dtos.User.CreateUserDto;
 import com.example.selfstudybe.dtos.User.UpdateUserDto;
 import com.example.selfstudybe.dtos.User.UserDto;
@@ -13,8 +15,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final Cloudinary cloudinary;
 
     private UserDto UserToDto(User user) {
         return new UserDto(
@@ -95,7 +101,6 @@ public class UserService {
 
         user.setEmail(Optional.ofNullable(updateUser.getEmail()).orElse(user.getEmail()));
         user.setUsername(Optional.ofNullable(updateUser.getUsername()).orElse(user.getUsername()));
-        user.setAvatarLink(Optional.ofNullable(updateUser.getAvatarLink()).orElse(user.getAvatarLink()));
         user.setRole(Optional.ofNullable(updateUser.getRole()).orElse(user.getRole()));
         if(updateUser.getPassword() != null)
             user.setPassword(new BCryptPasswordEncoder().encode(updateUser.getPassword()));
@@ -103,6 +108,24 @@ public class UserService {
         userRepository.save(user);
 
         return UserToDto(user);
+    }
 
+    public String uploadAvatar(UUID id, MultipartFile file) throws IOException {
+        User user = userRepository.findById(id).orElseThrow(()->new CustomNotFoundException("Can't find user with id " + id));
+
+        Map<String,Object> params = ObjectUtils.asMap(
+            "resource_type", "auto",
+                "public_id", id.toString(),
+                "asset_folder", "Avatar",
+                "overwrite", true
+        );
+
+        Map<String,Object> result = cloudinary.uploader().upload(file.getBytes(),params);
+        String url = result.get("secure_url").toString();
+
+        user.setAvatarLink(url);
+        userRepository.save(user);
+
+        return url;
     }
 }

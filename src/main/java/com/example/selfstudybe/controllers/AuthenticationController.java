@@ -257,6 +257,7 @@ public class AuthenticationController {
     }
 
     private UserInfo getUserInfoFromGoogle(String accessToken) {
+        ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("google");
         String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
         RestTemplate restTemplate = new RestTemplate();
         return restTemplate.getForObject(userInfoUrl + "?access_token=" + accessToken, UserInfo.class);
