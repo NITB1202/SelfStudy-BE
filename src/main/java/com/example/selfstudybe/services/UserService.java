@@ -12,6 +12,8 @@ import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,16 +31,6 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final Cloudinary cloudinary;
-
-    private UserDto UserToDto(User user) {
-        return new UserDto(
-                  user.getId(),
-                  user.getEmail(),
-                  user.getUsername(),
-                  user.getAvatarLink(),
-                  user.getRole()
-        );
-    }
 
     public User getUserByEmail(String email) {
         User user = userRepository.findByEmail(email);
@@ -69,7 +61,7 @@ public class UserService {
         user.setRole(Role.ADMIN);
 
         userRepository.save(user);
-        return UserToDto(user);
+        return new ModelMapper().map(user, UserDto.class);
     }
 
     public List<UserDto> searchUsers(String email, String username, Role role) {
@@ -90,7 +82,7 @@ public class UserService {
 
         List<User> users = userRepository.findAll(specification);
 
-        return users.stream().map(this::UserToDto).collect(Collectors.toList());
+        return new ModelMapper().map(users, new TypeToken<List<UserDto>>() {}.getType());
     }
 
     @Transactional
@@ -107,20 +99,20 @@ public class UserService {
 
         userRepository.save(user);
 
-        return UserToDto(user);
+        return new ModelMapper().map(user, UserDto.class);
     }
 
     public String uploadAvatar(UUID id, MultipartFile file) throws IOException {
         User user = userRepository.findById(id).orElseThrow(()->new CustomNotFoundException("Can't find user with id " + id));
 
-        Map<String,Object> params = ObjectUtils.asMap(
+        Map params = ObjectUtils.asMap(
             "resource_type", "auto",
                 "public_id", id.toString(),
                 "asset_folder", "Avatar",
                 "overwrite", true
         );
 
-        Map<String,Object> result = cloudinary.uploader().upload(file.getBytes(),params);
+        Map result = cloudinary.uploader().upload(file.getBytes(),params);
         String url = result.get("secure_url").toString();
 
         user.setAvatarLink(url);

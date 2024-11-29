@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -30,35 +30,45 @@ public class Plan {
 
     @NotNull
     @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime startDate;
 
     @NotNull
     @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDateTime endDate;
 
-    @NotNull
     @ColumnDefault("'01:00:00'")
     @Column(name = "notify_before", nullable = false)
     private LocalTime notifyBefore;
+
+    @NotNull
+    @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
+    @Enumerated(EnumType.STRING)
+    private PlanStatus status;
 
     @OneToMany(mappedBy = "plan")
     private Set<Notification> notifications = new LinkedHashSet<>();
 
     @ManyToMany
-    @JoinTable(name = "Plan_User",
+    @JoinTable(name = "plan_user",
             joinColumns = @JoinColumn(name = "plan_id"),
             inverseJoinColumns = @JoinColumn(name = "assignee_id"))
     private Set<User> users = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "plan")
     private Set<Task> tasks = new LinkedHashSet<>();
+
     @ManyToMany
-    @JoinTable(name = "Team_Plan",
+    @JoinTable(name = "team_plan",
             joinColumns = @JoinColumn(name = "plan_id"),
             inverseJoinColumns = @JoinColumn(name = "team_id"))
     private Set<Team> teams = new LinkedHashSet<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private PlanStatus status;
+    @PrePersist
+    public void prePersist() {
+        if (notifyBefore == null) {
+            notifyBefore = LocalTime.of(1,0,0);
+        }
+    }
 }

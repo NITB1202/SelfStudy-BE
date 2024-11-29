@@ -89,5 +89,4 @@ public class UserController {
         String url = userService.uploadAvatar(id,file);
         return ResponseEntity.ok(url);
     }
-
 }
