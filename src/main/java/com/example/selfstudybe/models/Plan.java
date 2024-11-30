@@ -42,7 +42,7 @@ public class Plan {
     private LocalTime notifyBefore;
 
     @NotNull
-    @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private PlanStatus status;
 
@@ -77,6 +77,5 @@ public class Plan {
         if (notifyBefore == null) notifyBefore = LocalTime.of(1, 0, 0);
         if (process == null) process = 0f;
         if (isPersonal == null) isPersonal = true;
-        status = PlanStatus.INCOMPLETE;
     }
 }

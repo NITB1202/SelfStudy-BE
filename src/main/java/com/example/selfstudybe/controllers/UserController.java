@@ -35,16 +35,16 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Create successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<UserDto> CreateUser(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
-                                                  @Valid @RequestBody CreateUserDto createUserDto) {
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
+    public ResponseEntity<UserDto> CreateUser(@Valid @RequestBody CreateUserDto createUserDto) {
         return ResponseEntity.ok(userService.createUser(createUserDto));
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Find all users that match the query parameters")
     @ApiResponse(responseCode = "200", description = "Find successfully")
-    public ResponseEntity<List<UserDto>> searchUser(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")
-                                                        @RequestParam(required = false) String email,
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")
+    public ResponseEntity<List<UserDto>> searchUser(    @RequestParam(required = false) String email,
                                                         @RequestParam(required = false) String username,
                                                         @RequestParam(required = false) Role role) {
         List<UserDto> users = userService.searchUsers(email, username, role);
@@ -58,8 +58,8 @@ public class UserController {
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     @ApiResponse(responseCode = "404", description = "Not found", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<UserDto> updateUser(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")
-                                                  @Valid @RequestBody UpdateUserDto user) {
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")
+    public ResponseEntity<UserDto> updateUser(@Valid @RequestBody UpdateUserDto user) {
         return ResponseEntity.ok(userService.updateUser(user));
     }
 

@@ -138,17 +138,4 @@ public class PlanService {
         Plan plan = planRepository.findById(planId).orElseThrow(() -> new CustomNotFoundException("Can't find plan with id " + planId));
         planRepository.delete(plan);
     }
-
-    private double calculatePlanProcess(Plan plan) {
-        List<Task> tasks = taskRepository.findByPlan(plan);
-
-        int finishedTasks = 0;
-        int totalTasks = tasks.size();
-
-        for (Task task : tasks)
-            if (task.getStatus().equals(TaskStatus.COMPLETED))
-                finishedTasks++;
-
-        return totalTasks != 0 ? (double) finishedTasks / totalTasks : 0;
-    }
 }

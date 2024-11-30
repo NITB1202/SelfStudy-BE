@@ -1,5 +1,6 @@
 package com.example.selfstudybe.repositories;
 
+import com.example.selfstudybe.models.Plan;
 import com.example.selfstudybe.models.PlanUser;
 import com.example.selfstudybe.models.PlanUserId;
 import com.example.selfstudybe.models.User;

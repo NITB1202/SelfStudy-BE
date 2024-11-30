@@ -23,7 +23,7 @@ public class Task {
     private UUID id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "plan_id", nullable = false)
     private Plan plan;
@@ -32,6 +32,12 @@ public class Task {
     @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
     private String name;
 
-    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private TaskStatus status;
+
+    @PrePersist
+    public void prePersist() {
+        status = TaskStatus.INCOMPLETE;
+    }
 }
