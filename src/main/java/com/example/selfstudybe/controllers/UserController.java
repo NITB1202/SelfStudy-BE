@@ -23,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
@@ -37,15 +36,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     public ResponseEntity<UserDto> CreateUser(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
-                                                  @Valid @RequestBody CreateUserDto createUserDto, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            throw new CustomBadRequestException(String.join(", ", errors));
-        }
-
+                                                  @Valid @RequestBody CreateUserDto createUserDto) {
         return ResponseEntity.ok(userService.createUser(createUserDto));
     }
 
@@ -68,15 +59,7 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "Not found", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     public ResponseEntity<UserDto> updateUser(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")
-                                                  @Valid @RequestBody UpdateUserDto user, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            throw new CustomBadRequestException(String.join(", ", errors));
-        }
-
+                                                  @Valid @RequestBody UpdateUserDto user) {
         return ResponseEntity.ok(userService.updateUser(user));
     }
 

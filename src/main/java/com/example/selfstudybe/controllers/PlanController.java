@@ -2,9 +2,9 @@ package com.example.selfstudybe.controllers;
 
 import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
 import com.example.selfstudybe.dtos.Plan.PlanDto;
+import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.ErrorResponse;
-import com.example.selfstudybe.models.Plan;
 import com.example.selfstudybe.services.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -54,8 +54,7 @@ public class PlanController {
 
     @GetMapping(value ="date", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get user's plans on a specific date")
-    @ApiResponse(responseCode = "200", description = "Get successfully", content =
-        @Content(mediaType = "application/json", schema = @Schema(implementation = PlanDto.class)))
+    @ApiResponse(responseCode = "200", description = "Get successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<List<PlanDto>> getPlansOnDate(@RequestParam UUID id, @RequestParam LocalDate date) {
@@ -64,26 +63,30 @@ public class PlanController {
 
     @GetMapping(value = "missed", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get user's missed plans")
-    public ResponseEntity<List<PlanDto>> getUserMissedPlan(@RequestParam UUID id, @RequestParam Integer dateBefore) {
-        return ResponseEntity.ok(planService.getUserMissedPlans(id,dateBefore));
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<List<PlanDto>> getUserMissedPlan(@RequestParam UUID id) {
+        return ResponseEntity.ok(planService.getUserMissedPlans(id));
     }
 
-    @PatchMapping("user")
+    @PatchMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update user's plan")
-    public ResponseEntity<PlanDto>  updateUserPlan(@Valid @RequestBody PlanDto planDto, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            throw new CustomBadRequestException(String.join(", ", errors));
-        }
-
-        return ResponseEntity.ok(null);
+    @ApiResponse(responseCode = "200", description = "Update successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request body", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional except planId")
+    public ResponseEntity<PlanDto>  updateUserPlan(@Valid @RequestBody UpdatePlanDto plan) {
+        return ResponseEntity.ok(planService.updatePlan(plan));
     }
 
     @DeleteMapping("user")
     @Operation(summary = "Delete user's plan")
+    @ApiResponse(responseCode = "200", description = "Delete successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<String>  deleteUserPlan(@RequestParam UUID id) {
         planService.deleteUserPlan(id);
         return ResponseEntity.ok("Delete successfully");

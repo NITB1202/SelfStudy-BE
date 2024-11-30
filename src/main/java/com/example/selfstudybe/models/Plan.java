@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.LinkedHashSet;
@@ -30,22 +31,28 @@ public class Plan {
 
     @NotNull
     @Column(name = "start_date", nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime startDate;
 
     @NotNull
     @Column(name = "end_date", nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime endDate;
 
     @ColumnDefault("'01:00:00'")
-    @Column(name = "notify_before", nullable = false)
+    @Column(name = "notify_before")
     private LocalTime notifyBefore;
 
     @NotNull
     @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
     @Enumerated(EnumType.STRING)
     private PlanStatus status;
+
+    @ColumnDefault("0")
+    @Column(name = "process")
+    private Float process;
+
+    @ColumnDefault("true")
+    @Column(name = "is_personal")
+    private Boolean isPersonal;
 
     @OneToMany(mappedBy = "plan")
     private Set<Notification> notifications = new LinkedHashSet<>();
@@ -67,8 +74,9 @@ public class Plan {
 
     @PrePersist
     public void prePersist() {
-        if (notifyBefore == null) {
-            notifyBefore = LocalTime.of(1,0,0);
-        }
+        if (notifyBefore == null) notifyBefore = LocalTime.of(1, 0, 0);
+        if (process == null) process = 0f;
+        if (isPersonal == null) isPersonal = true;
+        status = PlanStatus.INCOMPLETE;
     }
 }

@@ -1,6 +1,6 @@
 package com.example.selfstudybe.dtos.Plan;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.selfstudybe.Validators.ValidDateRange;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @AllArgsConstructor
 @Getter
+@ValidDateRange
 public class CreateUserPlanDto {
     @NotNull(message = "User id is required")
     private UUID userId;
@@ -21,11 +22,9 @@ public class CreateUserPlanDto {
     private String name;
 
     @NotNull(message = "Start date is required")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startDate;
 
     @NotNull(message = "End date is required")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endDate;
 
     @Schema(type = "string", format = "HH:mm:ss", example = "00:00:00")

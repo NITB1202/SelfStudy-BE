@@ -2,6 +2,7 @@ package com.example.selfstudybe.services;
 
 import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
 import com.example.selfstudybe.dtos.Plan.PlanDto;
+import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
 import com.example.selfstudybe.enums.PlanStatus;
 import com.example.selfstudybe.enums.TaskStatus;
 import com.example.selfstudybe.exception.CustomBadRequestException;
@@ -10,6 +11,7 @@ import com.example.selfstudybe.models.*;
 import com.example.selfstudybe.repositories.*;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -39,9 +41,6 @@ public class PlanService {
         if(plan.getStartDate().isBefore(LocalDateTime.now()))
             throw new CustomBadRequestException("The start date cannot be in the past.");
 
-        if(plan.getStartDate().isAfter(plan.getEndDate()) || plan.getEndDate().isEqual(plan.getStartDate()))
-            throw new CustomBadRequestException("Start date can't be equal or after end date");
-
         if(plan.getNotifyBefore() != null)
         {
             Duration duration = Duration.between(plan.getStartDate(), plan.getEndDate());
@@ -51,16 +50,10 @@ public class PlanService {
                 throw new CustomBadRequestException("Notify time can't be greater than duration between start and end dates");
         }
 
-        Plan newPlan = new Plan();
-        newPlan.setName(plan.getName());
-        newPlan.setStartDate(plan.getStartDate());
-        newPlan.setEndDate(plan.getEndDate());
-        if(plan.getNotifyBefore() != null)
-            newPlan.setNotifyBefore(plan.getNotifyBefore());
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
 
-        newPlan.setStatus(PlanStatus.INCOMPLETE);
-
-        Plan savedPlan = planRepository.save(newPlan);
+        Plan savedPlan = planRepository.save(modelMapper.map(plan, Plan.class));
 
         PlanUserId planUserId = new PlanUserId();
         planUserId.setPlanId(savedPlan.getId());
@@ -73,11 +66,7 @@ public class PlanService {
 
         planUserRepository.save(planUser);
 
-        PlanDto response = new ModelMapper().map(savedPlan, PlanDto.class);
-        response.setProcess(0);
-        response.setPersonal(true);
-
-        return response;
+        return new ModelMapper().map(savedPlan, PlanDto.class);
     }
 
     public List<PlanDto> getUserPlansOnDate(UUID userId, LocalDate date) {
@@ -99,29 +88,12 @@ public class PlanService {
                 datePlans.add(plan);
         }
 
-        List<PlanDto> response = new ArrayList<>();
-
-        for (Plan plan : datePlans) {
-            // Calculate plan's progress
-            double process = calculatePlanProcess(plan);
-
-            PlanDto planDto = new ModelMapper().map(plan, PlanDto.class);
-            planDto.setProcess(process);
-
-            // Check if plan belongs to the team
-            planDto.setPersonal(teamPlanRepository.findByPlan(plan) == null);
-
-            response.add(planDto);
-        }
-
-        return response;
+        return new ModelMapper().map(datePlans, new TypeToken<List<PlanDto>>() {}.getType());
     }
 
-    public List<PlanDto> getUserMissedPlans(UUID userId, Integer dateBefore) {
-        // Set default value
-        if(dateBefore == null) dateBefore = 3;
-
-        LocalDate checkDate = LocalDate.now().minusDays(dateBefore);
+    public List<PlanDto> getUserMissedPlans(UUID userId) {
+        // Back in 3 days
+        LocalDate checkDate = LocalDate.now().minusDays(3);
         LocalDateTime checkTime = checkDate.atStartOfDay();
 
         // Find user
@@ -137,16 +109,34 @@ public class PlanService {
             if(plan.getStatus().equals(PlanStatus.INCOMPLETE)
                     && plan.getEndDate().isBefore(LocalDateTime.now())
                     && plan.getEndDate().isAfter(checkTime))
-            {
-                PlanDto planDto = new ModelMapper().map(plan, PlanDto.class);
-                planDto.setProcess(calculatePlanProcess(plan));
-                planDto.setPersonal(teamPlanRepository.findByPlan(plan) == null);
-
-                response.add(planDto);
-            }
+                response.add(new ModelMapper().map(plan, PlanDto.class));
         }
 
         return response;
+    }
+
+    public PlanDto updatePlan(UpdatePlanDto updatedPlan) {
+        //Validate
+        Plan plan = planRepository.findById(updatedPlan.getPlanId()).orElseThrow(
+                () -> new CustomNotFoundException("Can't find plan with id " + updatedPlan.getPlanId()));
+
+        LocalDate checkDate = LocalDate.now().minusDays(3);
+        LocalDateTime checkTime = checkDate.atStartOfDay();
+        if(plan.getEndDate().isBefore(checkTime))
+            throw new CustomBadRequestException("Can't update a plan after 3 days from when the plan has ended");
+
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+
+        modelMapper.map(updatedPlan, plan);
+        planRepository.save(plan);
+
+        return modelMapper.map(plan, PlanDto.class);
+    }
+
+    public void deleteUserPlan(UUID planId) {
+        Plan plan = planRepository.findById(planId).orElseThrow(() -> new CustomNotFoundException("Can't find plan with id " + planId));
+        planRepository.delete(plan);
     }
 
     private double calculatePlanProcess(Plan plan) {
@@ -160,10 +150,5 @@ public class PlanService {
                 finishedTasks++;
 
         return totalTasks != 0 ? (double) finishedTasks / totalTasks : 0;
-    }
-
-    public void deleteUserPlan(UUID planId) {
-        Plan plan = planRepository.findById(planId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + planId));
-        planRepository.delete(plan);
     }
 }
