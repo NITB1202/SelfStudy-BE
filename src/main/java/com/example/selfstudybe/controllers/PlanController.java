@@ -18,6 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -51,12 +52,21 @@ public class PlanController {
         return ResponseEntity.ok(response);
     }
 
-//    @GetMapping("date")
-//    @Operation(summary = "Get user's plan on date")
-//    public ResponseEntity<List<PlanDto>> getPlansOnDate(@RequestParam UUID id, @RequestParam LocalDateTime date, BindingResult bindingResult) {
-//        List<PlanDto> plans = planService.getUserPlansOnDate(id,date);
-//        return ResponseEntity.ok(plans);
-//    }
+    @GetMapping(value ="date", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get user's plans on a specific date")
+    @ApiResponse(responseCode = "200", description = "Get successfully", content =
+        @Content(mediaType = "application/json", schema = @Schema(implementation = PlanDto.class)))
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<List<PlanDto>> getPlansOnDate(@RequestParam UUID id, @RequestParam LocalDate date) {
+        return ResponseEntity.ok(planService.getUserPlansOnDate(id,date));
+    }
+
+    @GetMapping(value = "missed", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get user's missed plans")
+    public ResponseEntity<List<PlanDto>> getUserMissedPlan(@RequestParam UUID id, @RequestParam Integer dateBefore) {
+        return ResponseEntity.ok(planService.getUserMissedPlans(id,dateBefore));
+    }
 
     @PatchMapping("user")
     @Operation(summary = "Update user's plan")
@@ -77,10 +87,5 @@ public class PlanController {
     public ResponseEntity<String>  deleteUserPlan(@RequestParam UUID id) {
         planService.deleteUserPlan(id);
         return ResponseEntity.ok("Delete successfully");
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Plan>> getAllUserPlans() {
-        return ResponseEntity.ok(planService.getAllPlans());
     }
 }
