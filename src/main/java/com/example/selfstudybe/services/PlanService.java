@@ -28,8 +28,6 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final UserRepository userRepository;
     private final PlanUserRepository planUserRepository;
-    private final TaskRepository taskRepository;
-    private final TeamPlanRepository teamPlanRepository;
 
     public PlanDto createUserPlan(CreateUserPlanDto plan) {
         // Validate
@@ -134,7 +132,7 @@ public class PlanService {
         return modelMapper.map(plan, PlanDto.class);
     }
 
-    public void deleteUserPlan(UUID planId) {
+    public void deletePlan(UUID planId) {
         Plan plan = planRepository.findById(planId).orElseThrow(() -> new CustomNotFoundException("Can't find plan with id " + planId));
         planRepository.delete(plan);
     }

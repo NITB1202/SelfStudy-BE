@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByPlan(Plan plan);
+    boolean existsByNameAndPlan(String name, Plan plan);
 }

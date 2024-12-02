@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -43,6 +42,7 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
     }
 
+    @Transactional
     public UserDto createUser(CreateUserDto createUserDto) {
         // Check duplicate
         User checkUser = userRepository.findByEmail(createUserDto.getEmail());
@@ -68,12 +68,16 @@ public class UserService {
         Specification<User> specification = Specification.where(null);
 
         if(email != null && !email.isEmpty()){
-            specification = specification.and(((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("email"), email)));
+            specification = specification.and((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("email"), email + "%"));
         }
 
-        if(username != null && !username.isEmpty()){
-            specification = specification.and(((root, query, criteriaBuilder) -> criteriaBuilder.equal(
-                    criteriaBuilder.lower(root.get("username")), username.toLowerCase())));
+        if (username != null && !username.isEmpty()) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("username")),
+                            username.toLowerCase() + "%"
+                    )
+            );
         }
 
         if(role != null){

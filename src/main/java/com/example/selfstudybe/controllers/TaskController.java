@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("task")
+@RequestMapping("v1/task")
 @AllArgsConstructor
 public class TaskController {
     private final TaskService taskService;

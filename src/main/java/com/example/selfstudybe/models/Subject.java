@@ -36,6 +36,10 @@ public class Subject {
     @Column(name = "image_link", length = Integer.MAX_VALUE)
     private String imageLink;
 
+    @ColumnDefault("true")
+    @Column(name = "is_personal")
+    private Boolean isPersonal;
+
     @OneToMany(mappedBy = "subject")
     private Set<Document> documents = new LinkedHashSet<>();
 

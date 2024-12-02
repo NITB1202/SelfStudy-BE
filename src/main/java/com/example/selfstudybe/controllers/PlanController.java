@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("plan")
+@RequestMapping("v1/plan")
 public class PlanController {
     private final PlanService planService;
 
@@ -71,24 +71,24 @@ public class PlanController {
     }
 
     @PatchMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Update user's plan")
+    @Operation(summary = "Update plan's information")
     @ApiResponse(responseCode = "200", description = "Update successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional except planId")
-    public ResponseEntity<PlanDto>  updateUserPlan(@Valid @RequestBody UpdatePlanDto plan) {
+    public ResponseEntity<PlanDto>  updatePlan(@Valid @RequestBody UpdatePlanDto plan) {
         return ResponseEntity.ok(planService.updatePlan(plan));
     }
 
     @DeleteMapping("user")
-    @Operation(summary = "Delete user's plan")
+    @Operation(summary = "Delete the plan")
     @ApiResponse(responseCode = "200", description = "Delete successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<String>  deleteUserPlan(@RequestParam UUID id) {
-        planService.deleteUserPlan(id);
+        planService.deletePlan(id);
         return ResponseEntity.ok("Delete successfully");
     }
 }

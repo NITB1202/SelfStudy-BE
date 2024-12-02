@@ -33,10 +33,8 @@ public class TaskService {
                 ()-> new CustomNotFoundException("Can't find plan with id "+createTaskDto.getPlanId()));
 
         // Check duplicated
-        List<Task> existedTasks = taskRepository.findByPlan(plan);
-        for (Task task : existedTasks)
-            if(task.getName().equals(createTaskDto.getName()))
-                throw new CustomBadRequestException("Task with name "+createTaskDto.getName()+" already exists");
+        if(taskRepository.existsByNameAndPlan(createTaskDto.getName(),plan))
+            throw new CustomBadRequestException("Task with name "+createTaskDto.getName()+" already exists");
 
         // Check valid plan
         if(plan.getEndDate().isBefore(LocalDateTime.now()))
@@ -70,10 +68,8 @@ public class TaskService {
         Plan plan = task.getPlan();
 
         // Check duplicated
-        List<Task> existedTasks = taskRepository.findByPlan(plan);
-        for (Task existedTask : existedTasks)
-            if(existedTask.getName().equals(updateTask.getName()))
-                throw new CustomNotFoundException("Task with name " + updateTask.getName()+" already exists");
+        if(updateTask.getName() != null && taskRepository.existsByNameAndPlan(updateTask.getName(),plan))
+            throw new CustomBadRequestException("Task with name " + updateTask.getName()+" already exists");
 
         // Check valid plan
         if(plan.getEndDate().isBefore(LocalDateTime.now()))

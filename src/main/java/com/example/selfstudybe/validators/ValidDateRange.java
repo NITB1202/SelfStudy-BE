@@ -1,4 +1,4 @@
-package com.example.selfstudybe.Validators;
+package com.example.selfstudybe.validators;
 
 import com.nimbusds.jose.Payload;
 import jakarta.validation.Constraint;

@@ -1,4 +1,4 @@
-package com.example.selfstudybe.Validators;
+package com.example.selfstudybe.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
