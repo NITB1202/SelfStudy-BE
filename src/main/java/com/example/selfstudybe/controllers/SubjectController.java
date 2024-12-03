@@ -65,7 +65,7 @@ public class SubjectController {
     @DeleteMapping
     @Operation(summary = "Delete the subject")
     @ApiResponse(responseCode = "200", description = "Delete successfully")
-    public ResponseEntity<String> deleteSubject(@RequestParam UUID id) throws IOException {
+    public ResponseEntity<String> deleteSubject(@RequestParam UUID id) throws Exception {
         subjectService.deleteSubject(id);
         return ResponseEntity.ok("Delete successfully");
     }

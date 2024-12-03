@@ -7,10 +7,13 @@ import com.example.selfstudybe.dtos.Subject.SubjectDto;
 import com.example.selfstudybe.dtos.Subject.UpdateSubjectDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
+import com.example.selfstudybe.models.Document;
 import com.example.selfstudybe.models.Subject;
 import com.example.selfstudybe.models.User;
+import com.example.selfstudybe.repositories.DocumentRepository;
 import com.example.selfstudybe.repositories.SubjectRepository;
 import com.example.selfstudybe.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -27,6 +30,7 @@ import java.util.UUID;
 public class SubjectService {
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final DocumentRepository documentRepository;
     private final Cloudinary cloudinary;
 
     public SubjectDto createUserSubject(CreateUserSubjectDto request) {
@@ -40,9 +44,10 @@ public class SubjectService {
         Subject subject = new ModelMapper().map(request, Subject.class);
         subject.setCreator(user);
         subject.setIsPersonal(true);
-        subjectRepository.save(subject);
 
-        return new ModelMapper().map(subject, SubjectDto.class);
+        Subject savedSubject = subjectRepository.save(subject);
+
+        return new ModelMapper().map(savedSubject, SubjectDto.class);
     }
 
     public List<SubjectDto> getAllUserSubjects(UUID userId) {
@@ -93,7 +98,8 @@ public class SubjectService {
         return url;
     }
 
-    public void deleteSubject(UUID id) throws IOException {
+    @Transactional
+    public void deleteSubject(UUID id) throws Exception {
         Subject subject = subjectRepository.findById(id).orElseThrow(
                 ()-> new CustomNotFoundException("Can't find subject with id " + id)
         );
@@ -101,6 +107,19 @@ public class SubjectService {
         // Delete image
         if(subject.getImageLink() != null) {
             cloudinary.uploader().destroy(id.toString(), ObjectUtils.emptyMap());
+        }
+
+        // Delete all documents in subject
+        if(documentRepository.existsBySubjectId(id))
+        {
+            List<Document> documents = documentRepository.findBySubject(subject);
+            for(Document document : documents)
+            {
+                String publicId = document.getId() + "." + document.getExtension();
+                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
+            }
+            String folderPath = "Document/" + id;
+            cloudinary.api().deleteFolder(folderPath, ObjectUtils.emptyMap());
         }
 
         subjectRepository.delete(subject);

@@ -1,4 +1,4 @@
-package com.example.selfstudybe.dtos.Subject;
+package com.example.selfstudybe.dtos.Document;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +10,10 @@ import java.util.UUID;
 
 @AllArgsConstructor
 @Getter @Setter
-public class CreateUserSubjectDto {
+public class CreateDocumentDto {
+    @NotNull(message = "Subject id is required")
+    private UUID subjectId;
+
     @NotNull(message = "User id is required")
     private UUID userId;
 

@@ -8,7 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -21,6 +21,9 @@ public class Document {
     @ColumnDefault("gen_random_uuid()")
     @Column(name = "doc_id", nullable = false)
     private UUID id;
+
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -36,10 +39,11 @@ public class Document {
 
     @ColumnDefault("now()")
     @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
-    @NotNull
-    @Column(name = "doc_link", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "doc_link", length = Integer.MAX_VALUE)
     private String docLink;
 
+    @Column(name = "extension")
+    private String extension;
 }

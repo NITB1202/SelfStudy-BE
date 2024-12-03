@@ -9,7 +9,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter @Setter
 public class SubjectDto {
-    private UUID id;
+    private UUID subjectId;
     private String name;
     private String imageLink;
     private UUID creatorId;
