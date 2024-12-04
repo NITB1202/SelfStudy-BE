@@ -2,32 +2,22 @@ package com.example.selfstudybe.services;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.example.selfstudybe.dtos.Plan.PlanDto;
 import com.example.selfstudybe.dtos.Team.CreateTeamDto;
 import com.example.selfstudybe.dtos.Team.TeamDto;
 import com.example.selfstudybe.dtos.Team.TeamMemberDto;
 import com.example.selfstudybe.dtos.Team.UpdateTeamDto;
-import com.example.selfstudybe.dtos.User.UserDto;
 import com.example.selfstudybe.enums.TeamRole;
 import com.example.selfstudybe.exception.CustomBadRequestException;
-import com.example.selfstudybe.models.Team;
-import com.example.selfstudybe.models.User;
-import com.example.selfstudybe.models.UserTeam;
-import com.example.selfstudybe.models.UserTeamId;
-import com.example.selfstudybe.repositories.TeamRepository;
-import com.example.selfstudybe.repositories.UserRepository;
-import com.example.selfstudybe.repositories.UserTeamRepository;
+import com.example.selfstudybe.models.*;
+import com.example.selfstudybe.repositories.*;
 import lombok.AllArgsConstructor;
-import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
 import org.modelmapper.TypeToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,6 +29,10 @@ public class TeamService {
     private final UserRepository userRepository;
     private final UserTeamRepository userTeamRepository;
     private final Cloudinary cloudinary;
+    private final PlanRepository planRepository;
+    private final SubjectService subjectService;
+    private final TeamPlanRepository teamPlanRepository;
+    private final TeamSubjectRepository teamSubjectRepository;
 
     public TeamDto createNewTeam(CreateTeamDto request) {
         User user = userRepository.findById(request.getCreatorId()).orElseThrow(
@@ -134,7 +128,7 @@ public class TeamService {
         return modelMapper.map(team, TeamDto.class);
     }
 
-    public void deleteTeam(UUID teamId) throws IOException {
+    public void deleteTeam(UUID teamId) throws Exception {
         Team team = teamRepository.findById(teamId).orElseThrow(
                 ()-> new CustomBadRequestException("Can't find team with id " + teamId)
         );
@@ -143,11 +137,20 @@ public class TeamService {
         if(team.getImageLink() != null)
             cloudinary.uploader().destroy(teamId.toString(),ObjectUtils.emptyMap());
 
-        //Delete team plan
+        // Delete team's plans
+        List<TeamPlan> teamPlans = teamPlanRepository.findByTeam(team);
+        List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
 
-        //Delete team documents
+        teamPlanRepository.deleteAll(teamPlans);
+        planRepository.deleteAll(plans);
 
-        //Delete team subject
+        //Delete team's subjects
+        List<TeamSubject> teamSubjects = teamSubjectRepository.findByTeam(team);
+        List<Subject> subjects = teamSubjects.stream().map(TeamSubject::getSubject).toList();
+
+        teamSubjectRepository.deleteAll(teamSubjects);
+        for(Subject subject : subjects)
+            subjectService.deleteSubject(subject.getId());
 
         teamRepository.delete(team);
     }

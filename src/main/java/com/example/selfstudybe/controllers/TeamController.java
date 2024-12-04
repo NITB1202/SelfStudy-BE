@@ -77,7 +77,7 @@ public class TeamController {
     @ApiResponse(responseCode = "200", description = "Delete successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<String> deleteTeam(@RequestParam UUID teamId) throws IOException {
+    public ResponseEntity<String> deleteTeam(@RequestParam UUID teamId) throws Exception {
         teamService.deleteTeam(teamId);
         return ResponseEntity.ok("Delete successfully");
     }

@@ -1,5 +1,6 @@
 package com.example.selfstudybe.controllers;
 
+import com.example.selfstudybe.dtos.Subject.CreateTeamSubjectDto;
 import com.example.selfstudybe.dtos.Subject.CreateUserSubjectDto;
 import com.example.selfstudybe.dtos.Subject.SubjectDto;
 import com.example.selfstudybe.dtos.Subject.UpdateSubjectDto;
@@ -35,11 +36,28 @@ public class SubjectController {
         return ResponseEntity.ok(subjectService.createUserSubject(subjectDto));
     }
 
+    @PostMapping(value = "team", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Create a new team's subject")
+    @ApiResponse(responseCode = "400", description = "Invalid request body", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<SubjectDto> createTeamSubject(@Valid @RequestBody CreateTeamSubjectDto subjectDto) {
+        return ResponseEntity.ok(subjectService.createTeamSubject(subjectDto));
+    }
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get all of the user's personal subjects")
     @ApiResponse(responseCode = "200", description = "Get successfully")
     public ResponseEntity<List<SubjectDto>> getAllUserSubjects(@RequestParam UUID userId) {
         return ResponseEntity.ok(subjectService.getAllUserSubjects(userId));
+    }
+
+    @GetMapping(value ="team", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get all of the team's subjects")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    public ResponseEntity<List<SubjectDto>> getAllTeamSubjects(@RequestParam UUID teamId) {
+        return ResponseEntity.ok(subjectService.getAllTeamSubjects(teamId));
     }
 
     @PatchMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -69,9 +87,4 @@ public class SubjectController {
         subjectService.deleteSubject(id);
         return ResponseEntity.ok("Delete successfully");
     }
-
-
-
-
-
 }

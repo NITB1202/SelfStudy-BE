@@ -2,17 +2,14 @@ package com.example.selfstudybe.services;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.example.selfstudybe.dtos.Subject.CreateTeamSubjectDto;
 import com.example.selfstudybe.dtos.Subject.CreateUserSubjectDto;
 import com.example.selfstudybe.dtos.Subject.SubjectDto;
 import com.example.selfstudybe.dtos.Subject.UpdateSubjectDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
-import com.example.selfstudybe.models.Document;
-import com.example.selfstudybe.models.Subject;
-import com.example.selfstudybe.models.User;
-import com.example.selfstudybe.repositories.DocumentRepository;
-import com.example.selfstudybe.repositories.SubjectRepository;
-import com.example.selfstudybe.repositories.UserRepository;
+import com.example.selfstudybe.models.*;
+import com.example.selfstudybe.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -21,9 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -32,6 +27,8 @@ public class SubjectService {
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
     private final Cloudinary cloudinary;
+    private final TeamRepository teamRepository;
+    private final TeamSubjectRepository teamSubjectRepository;
 
     public SubjectDto createUserSubject(CreateUserSubjectDto request) {
         User user = userRepository.findById(request.getUserId()).orElseThrow(
@@ -50,6 +47,48 @@ public class SubjectService {
         return new ModelMapper().map(savedSubject, SubjectDto.class);
     }
 
+    @Transactional
+    public SubjectDto createTeamSubject(CreateTeamSubjectDto request) {
+        Team team = teamRepository.findById(request.getTeamId()).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find team with id " + request.getTeamId())
+        );
+
+        // Check duplicated
+        List<TeamSubject> teamSubjects = teamSubjectRepository.findByTeam(team);
+        List<Subject> subjects = teamSubjects.stream().map(TeamSubject::getSubject).toList();
+        for (Subject subject : subjects) {
+            if(subject.getName().equals(request.getName()))
+                throw new CustomBadRequestException("Subject already exists");
+        }
+
+        User user = userRepository.findById(request.getCreatorId()).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find user with id " + request.getCreatorId())
+        );
+
+        // Save subject
+        Subject subject = new Subject();
+
+        subject.setName(request.getName());
+        subject.setCreator(user);
+        subject.setIsPersonal(false);
+
+        Subject savedSubject = subjectRepository.save(subject);
+
+        // Save TeamSubject
+        TeamSubjectId teamSubjectId = new TeamSubjectId();
+        teamSubjectId.setTeamId(request.getTeamId());
+        teamSubjectId.setSubjectId(savedSubject.getId());
+
+        TeamSubject teamSubject = new TeamSubject();
+        teamSubject.setId(teamSubjectId);
+        teamSubject.setSubject(savedSubject);
+        teamSubject.setTeam(team);
+
+        teamSubjectRepository.save(teamSubject);
+
+        return new ModelMapper().map(savedSubject, SubjectDto.class);
+    }
+
     public List<SubjectDto> getAllUserSubjects(UUID userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 ()-> new CustomNotFoundException("Can't find user with id " + userId));
@@ -57,6 +96,17 @@ public class SubjectService {
          List<Subject> subjects = subjectRepository.findByCreatorAndIsPersonal(user, true);
 
          return new ModelMapper().map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
+    }
+
+    public List<SubjectDto> getAllTeamSubjects(UUID teamId) {
+        Team team = teamRepository.findById(teamId).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find team with id " + teamId)
+        );
+
+        List<TeamSubject> teamSubjects = teamSubjectRepository.findByTeam(team);
+        List<Subject> subjects = teamSubjects.stream().map(TeamSubject::getSubject).toList();
+
+        return new ModelMapper().map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
     }
 
     public SubjectDto updateSubject(UpdateSubjectDto request) {
