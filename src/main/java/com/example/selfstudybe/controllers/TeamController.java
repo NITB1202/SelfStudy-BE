@@ -28,7 +28,7 @@ public class TeamController {
     private final TeamService teamService;
 
     @PostMapping
-    @Operation(summary = "Create a new group")
+    @Operation(summary = "Create a new team")
     @ApiResponse(responseCode = "200", description = "Create successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -81,6 +81,4 @@ public class TeamController {
         teamService.deleteTeam(teamId);
         return ResponseEntity.ok("Delete successfully");
     }
-
-
 }

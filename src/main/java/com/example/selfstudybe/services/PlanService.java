@@ -1,10 +1,10 @@
 package com.example.selfstudybe.services;
 
+import com.example.selfstudybe.dtos.Plan.CreateTeamPlanDto;
 import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
 import com.example.selfstudybe.dtos.Plan.PlanDto;
 import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
 import com.example.selfstudybe.enums.PlanStatus;
-import com.example.selfstudybe.enums.TaskStatus;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.*;
@@ -28,41 +28,75 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final UserRepository userRepository;
     private final PlanUserRepository planUserRepository;
+    private final TeamRepository teamRepository;
+    private final TeamPlanRepository teamPlanRepository;
 
-    public PlanDto createUserPlan(CreateUserPlanDto plan) {
-        // Validate
-        User user = userRepository.findById(plan.getUserId()).orElse(null);
+    public PlanDto createUserPlan(CreateUserPlanDto request) {
+        // Validate plan
+        User user = userRepository.findById(request.getUserId()).orElseThrow(
+                ()->new CustomBadRequestException("Can't find user with id " + request.getUserId())
+        );
 
-        if(user == null)
-            throw new CustomNotFoundException("Can't find user with id " + plan.getUserId());
+        if(request.getEndDate().isBefore(LocalDateTime.now()))
+            throw new CustomBadRequestException("The end date cannot be in the past.");
 
-        if(plan.getStartDate().isBefore(LocalDateTime.now()))
-            throw new CustomBadRequestException("The start date cannot be in the past.");
-
-        if(plan.getNotifyBefore() != null)
+        if(request.getNotifyBefore() != null)
         {
-            Duration duration = Duration.between(plan.getStartDate(), plan.getEndDate());
-            Duration notifyBeforeDuration = Duration.between(LocalTime.MIN, plan.getNotifyBefore());
+            Duration duration = Duration.between(request.getStartDate(), request.getEndDate());
+            Duration notifyBeforeDuration = Duration.between(LocalTime.MIN, request.getNotifyBefore());
 
             if(notifyBeforeDuration.compareTo(duration) > 0)
                 throw new CustomBadRequestException("Notify time can't be greater than duration between start and end dates");
         }
 
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
-
-        Plan savedPlan = planRepository.save(modelMapper.map(plan, Plan.class));
+        Plan savedPlan = planRepository.save(new ModelMapper().map(request, Plan.class));
 
         PlanUserId planUserId = new PlanUserId();
         planUserId.setPlanId(savedPlan.getId());
-        planUserId.setAssigneeId(plan.getUserId());
+        planUserId.setAssigneeId(request.getUserId());
 
         PlanUser planUser = new PlanUser();
         planUser.setId(planUserId);
-        planUser.setPlan(savedPlan);
         planUser.setAssignee(user);
+        planUser.setPlan(savedPlan);
 
         planUserRepository.save(planUser);
+
+        return new ModelMapper().map(savedPlan, PlanDto.class);
+    }
+
+    public PlanDto createTeamPlan(CreateTeamPlanDto request) {
+        Team team = teamRepository.findById(request.getTeamId()).orElseThrow(
+                ()->new CustomBadRequestException("Can't find team with id " + request.getTeamId())
+        );
+
+        if(request.getEndDate().isBefore(LocalDateTime.now()))
+            throw new CustomBadRequestException("The end date cannot be in the past.");
+
+        if(request.getNotifyBefore() != null)
+        {
+            Duration duration = Duration.between(request.getStartDate(), request.getEndDate());
+            Duration notifyBeforeDuration = Duration.between(LocalTime.MIN, request.getNotifyBefore());
+
+            if(notifyBeforeDuration.compareTo(duration) > 0)
+                throw new CustomBadRequestException("Notify time can't be greater than duration between start and end dates");
+        }
+
+        Plan plan = new ModelMapper().map(request, Plan.class);
+        plan.setPersonal(false);
+
+        Plan savedPlan = planRepository.save(plan);
+
+        TeamPlanId id = new TeamPlanId();
+        id.setPlanId(savedPlan.getId());
+        id.setTeamId(request.getTeamId());
+
+        TeamPlan teamPlan = new TeamPlan();
+        teamPlan.setId(id);
+        teamPlan.setTeam(team);
+        teamPlan.setPlan(savedPlan);
+
+        teamPlanRepository.save(teamPlan);
 
         return new ModelMapper().map(savedPlan, PlanDto.class);
     }
@@ -71,46 +105,46 @@ public class PlanService {
         // Find user
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
 
-        // Get all user's plans(include team's plans)
+        // Get all user's plans
         List<PlanUser> planUsers = planUserRepository.findByAssignee(user);
         List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
+        List<Plan> plansOnDate = filterPlansOnDate(date, plans);
 
-        // Get all plans on that date
-        LocalDateTime startDate = date.atStartOfDay();
-        LocalDateTime endDate = date.atTime(LocalTime.MAX);
+        return new ModelMapper().map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
+    }
 
-        List<Plan> datePlans = new ArrayList<>();
-        for (Plan plan : plans) {
-            if ((startDate.isAfter(plan.getStartDate()) || startDate.isEqual(plan.getStartDate())) &&
-                    (endDate.isBefore(plan.getEndDate()) || endDate.isEqual(plan.getEndDate())))
-                datePlans.add(plan);
-        }
+    public List<PlanDto> getTeamPlansOnDate(UUID teamId, LocalDate date) {
+        Team team = teamRepository.findById(teamId).orElseThrow(
+                () -> new CustomNotFoundException("Can't find team with id " + teamId)
+        );
 
-        return new ModelMapper().map(datePlans, new TypeToken<List<PlanDto>>() {}.getType());
+        List<TeamPlan> teamPlans = teamPlanRepository.findByTeam(team);
+        List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
+        List<Plan> plansOnDate = filterPlansOnDate(date, plans);
+
+        return new ModelMapper().map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
     }
 
     public List<PlanDto> getUserMissedPlans(UUID userId) {
-        // Back in 3 days
-        LocalDate checkDate = LocalDate.now().minusDays(3);
-        LocalDateTime checkTime = checkDate.atStartOfDay();
-
         // Find user
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
 
-        // Get all user's plans(include team's plans)
+        // Get all user's plans
         List<PlanUser> planUsers = planUserRepository.findByAssignee(user);
         List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
 
-        List<PlanDto> response = new ArrayList<>();
+        return filterMissedPlans(plans);
+    }
 
-        for (Plan plan : plans) {
-            if(plan.getStatus().equals(PlanStatus.INCOMPLETE)
-                    && plan.getEndDate().isBefore(LocalDateTime.now())
-                    && plan.getEndDate().isAfter(checkTime))
-                response.add(new ModelMapper().map(plan, PlanDto.class));
-        }
+    public List<PlanDto> getTeamMissedPlans(UUID teamId) {
+        Team team = teamRepository.findById(teamId).orElseThrow(
+                () -> new CustomNotFoundException("Can't find team with id " + teamId)
+        );
 
-        return response;
+        List<TeamPlan> teamPlans = teamPlanRepository.findByTeam(team);
+        List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
+
+        return filterMissedPlans(plans);
     }
 
     public PlanDto updatePlan(UpdatePlanDto updatedPlan) {
@@ -135,5 +169,40 @@ public class PlanService {
     public void deletePlan(UUID planId) {
         Plan plan = planRepository.findById(planId).orElseThrow(() -> new CustomNotFoundException("Can't find plan with id " + planId));
         planRepository.delete(plan);
+    }
+
+    public List<Plan> filterPlansOnDate(LocalDate date, List<Plan> plans) {
+        LocalDateTime startDate = date.atStartOfDay();
+        LocalDateTime endDate = date.atTime(LocalTime.MAX);
+
+        List<Plan> datePlans = new ArrayList<>();
+
+        for (Plan plan : plans) {
+            if (isPlanOnDate(startDate, endDate, plan))
+                datePlans.add(plan);
+        }
+
+        return datePlans;
+    }
+
+    public boolean isPlanOnDate(LocalDateTime startDate, LocalDateTime endDate, Plan plan) {
+        return !startDate.isAfter(plan.getEndDate()) && !endDate.isBefore(plan.getStartDate());
+    }
+
+    public List<PlanDto> filterMissedPlans(List<Plan> plans) {
+        // Back in 3 days
+        LocalDate checkDate = LocalDate.now().minusDays(3);
+        LocalDateTime checkTime = checkDate.atStartOfDay();
+
+        List<PlanDto> response = new ArrayList<>();
+
+        for (Plan plan : plans) {
+            if(plan.getStatus().equals(PlanStatus.INCOMPLETE)
+                    && plan.getEndDate().isBefore(LocalDateTime.now())
+                    && plan.getEndDate().isAfter(checkTime))
+                response.add(new ModelMapper().map(plan, PlanDto.class));
+        }
+
+        return response;
     }
 }

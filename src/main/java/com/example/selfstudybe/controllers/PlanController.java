@@ -1,9 +1,9 @@
 package com.example.selfstudybe.controllers;
 
+import com.example.selfstudybe.dtos.Plan.CreateTeamPlanDto;
 import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
 import com.example.selfstudybe.dtos.Plan.PlanDto;
 import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
-import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.ErrorResponse;
 import com.example.selfstudybe.services.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,14 +14,11 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
@@ -29,8 +26,8 @@ import java.util.stream.Collectors;
 public class PlanController {
     private final PlanService planService;
 
-    @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Create new user's plan")
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Create a new user's plan")
     @ApiResponse(responseCode = "200", description = "Create successfully", content =
         @Content(mediaType = "application/json", schema = @Schema(implementation = PlanDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
@@ -38,18 +35,14 @@ public class PlanController {
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "NotifyBefore is optional")
-    public ResponseEntity<PlanDto> createUserPlan(@Valid @RequestBody CreateUserPlanDto plan, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            throw new CustomBadRequestException(String.join(", ", errors));
-        }
+    public ResponseEntity<PlanDto> createUserPlan(@Valid @RequestBody CreateUserPlanDto plan) {
+        return ResponseEntity.ok(planService.createUserPlan(plan));
+    }
 
-        PlanDto response = planService.createUserPlan(plan);
-
-        return ResponseEntity.ok(response);
+    @PostMapping(value = "team", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Create a new team's plan")
+    public ResponseEntity<PlanDto> createTeamPlan(@Valid @RequestBody CreateTeamPlanDto plan) {
+        return ResponseEntity.ok(planService.createTeamPlan(plan));
     }
 
     @GetMapping(value ="date", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -61,6 +54,15 @@ public class PlanController {
         return ResponseEntity.ok(planService.getUserPlansOnDate(id,date));
     }
 
+    @GetMapping(value = "team/date", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get team's plans in a specific date")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<List<PlanDto>> getTeamPlansOnDate(@RequestParam UUID id, @RequestParam LocalDate date) {
+        return ResponseEntity.ok(planService.getTeamPlansOnDate(id,date));
+    }
+
     @GetMapping(value = "missed", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get user's missed plans")
     @ApiResponse(responseCode = "200", description = "Get successfully")
@@ -70,7 +72,16 @@ public class PlanController {
         return ResponseEntity.ok(planService.getUserMissedPlans(id));
     }
 
-    @PatchMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "team/missed", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get team's missed plans")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<List<PlanDto>> getTeamMissedPlans(@RequestParam UUID id) {
+        return ResponseEntity.ok(planService.getTeamMissedPlans(id));
+    }
+
+    @PatchMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update plan's information")
     @ApiResponse(responseCode = "200", description = "Update successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
@@ -82,7 +93,7 @@ public class PlanController {
         return ResponseEntity.ok(planService.updatePlan(plan));
     }
 
-    @DeleteMapping("user")
+    @DeleteMapping
     @Operation(summary = "Delete the plan")
     @ApiResponse(responseCode = "200", description = "Delete successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =

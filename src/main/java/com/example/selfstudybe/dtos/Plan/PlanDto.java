@@ -35,5 +35,5 @@ public class PlanDto implements Serializable {
 
     private double process;
 
-    private boolean isPersonal;
+    private boolean personal;
 }
