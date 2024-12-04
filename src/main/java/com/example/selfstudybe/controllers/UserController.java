@@ -4,7 +4,6 @@ import com.example.selfstudybe.dtos.User.CreateUserDto;
 import com.example.selfstudybe.dtos.User.UpdateUserDto;
 import com.example.selfstudybe.dtos.User.UserDto;
 import com.example.selfstudybe.enums.Role;
-import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.ErrorResponse;
 import com.example.selfstudybe.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;

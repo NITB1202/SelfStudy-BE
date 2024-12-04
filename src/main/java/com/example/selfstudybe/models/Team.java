@@ -8,7 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -32,13 +32,9 @@ public class Team {
     @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
     private String name;
 
-    @NotNull
-    @Column(name = "team_code", nullable = false, length = Integer.MAX_VALUE)
-    private String teamCode;
-
     @ColumnDefault("now()")
     @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @ColumnDefault("2")
     @Column(name = "num")
