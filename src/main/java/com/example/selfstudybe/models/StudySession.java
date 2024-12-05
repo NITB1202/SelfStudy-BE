@@ -9,6 +9,8 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -29,14 +31,42 @@ public class StudySession {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "end_time")
-    private LocalTime endTime;
+    @Column(name = "update_at")
+    private LocalDateTime updateAt;
+
+    @Column(name = "status", nullable = false, length = Integer.MAX_VALUE)
+    @Enumerated(EnumType.STRING)
+    private SessionStatus status;
+
+    @Column(name = "total_time")
+    private LocalTime totalTime;
 
     @NotNull
-    @Column(name = "duration", nullable = false)
-    private LocalTime duration;
+    @Column(name = "focus_time", nullable = false)
+    private LocalTime focusTime;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "state", nullable = false)
-    private SessionStatus state;
+    @NotNull
+    @Column(name = "break_time", nullable = false)
+    private LocalTime breakTime;
+
+    @NotNull
+    @Column(name = "total_stage", nullable = false)
+    private Integer totalStage;
+
+    @ColumnDefault("1")
+    @Column(name = "current_stage")
+    private Integer currentStage;
+
+    @Column(name = "music_link", length = Integer.MAX_VALUE)
+    private String musicLink;
+
+    @Column(name = "music_timestamp")
+    private LocalTime musicTimestamp;
+
+    @NotNull
+    @Column(name = "time_left", nullable = false)
+    private LocalTime timeLeft;
+
+    @Column(name = "on_loop")
+    private Boolean onLoop;
 }
