@@ -30,6 +30,7 @@ public class PlanService {
     private final PlanUserRepository planUserRepository;
     private final TeamRepository teamRepository;
     private final TeamPlanRepository teamPlanRepository;
+    private final ModelMapper modelMapper;
 
     public PlanDto createUserPlan(CreateUserPlanDto request) {
         // Validate plan
@@ -49,7 +50,7 @@ public class PlanService {
                 throw new CustomBadRequestException("Notify time can't be greater than duration between start and end dates");
         }
 
-        Plan savedPlan = planRepository.save(new ModelMapper().map(request, Plan.class));
+        Plan savedPlan = planRepository.save(modelMapper.map(request, Plan.class));
 
         PlanUserId planUserId = new PlanUserId();
         planUserId.setPlanId(savedPlan.getId());
@@ -62,7 +63,7 @@ public class PlanService {
 
         planUserRepository.save(planUser);
 
-        return new ModelMapper().map(savedPlan, PlanDto.class);
+        return modelMapper.map(savedPlan, PlanDto.class);
     }
 
     public PlanDto createTeamPlan(CreateTeamPlanDto request) {
@@ -82,7 +83,7 @@ public class PlanService {
                 throw new CustomBadRequestException("Notify time can't be greater than duration between start and end dates");
         }
 
-        Plan plan = new ModelMapper().map(request, Plan.class);
+        Plan plan = modelMapper.map(request, Plan.class);
         plan.setPersonal(false);
 
         Plan savedPlan = planRepository.save(plan);
@@ -98,7 +99,7 @@ public class PlanService {
 
         teamPlanRepository.save(teamPlan);
 
-        return new ModelMapper().map(savedPlan, PlanDto.class);
+        return modelMapper.map(savedPlan, PlanDto.class);
     }
 
     public List<PlanDto> getUserPlansOnDate(UUID userId, LocalDate date) {
@@ -110,7 +111,7 @@ public class PlanService {
         List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
         List<Plan> plansOnDate = filterPlansOnDate(date, plans);
 
-        return new ModelMapper().map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
+        return modelMapper.map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
     }
 
     public List<PlanDto> getTeamPlansOnDate(UUID teamId, LocalDate date) {
@@ -122,7 +123,7 @@ public class PlanService {
         List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
         List<Plan> plansOnDate = filterPlansOnDate(date, plans);
 
-        return new ModelMapper().map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
+        return modelMapper.map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
     }
 
     public List<PlanDto> getUserMissedPlans(UUID userId) {
@@ -156,9 +157,6 @@ public class PlanService {
         LocalDateTime checkTime = checkDate.atStartOfDay();
         if(plan.getEndDate().isBefore(checkTime))
             throw new CustomBadRequestException("Can't update a plan after 3 days from when the plan has ended");
-
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
 
         modelMapper.map(updatedPlan, plan);
         planRepository.save(plan);
@@ -200,7 +198,7 @@ public class PlanService {
             if(plan.getStatus().equals(PlanStatus.INCOMPLETE)
                     && plan.getEndDate().isBefore(LocalDateTime.now())
                     && plan.getEndDate().isAfter(checkTime))
-                response.add(new ModelMapper().map(plan, PlanDto.class));
+                response.add(modelMapper.map(plan, PlanDto.class));
         }
 
         return response;

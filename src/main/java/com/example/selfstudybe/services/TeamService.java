@@ -33,6 +33,7 @@ public class TeamService {
     private final SubjectService subjectService;
     private final TeamPlanRepository teamPlanRepository;
     private final TeamSubjectRepository teamSubjectRepository;
+    private final ModelMapper modelMapper;
 
     public TeamDto createNewTeam(CreateTeamDto request) {
         User user = userRepository.findById(request.getCreatorId()).orElseThrow(
@@ -44,7 +45,7 @@ public class TeamService {
             throw new CustomBadRequestException("Team with name " + request.getName() + " already exists");
 
         // Save team
-        Team team = new ModelMapper().map(request, Team.class);
+        Team team = modelMapper.map(request, Team.class);
         team.setCreator(user);
         team.setCreatedAt(LocalDateTime.now());
         team.setNum(1);
@@ -64,13 +65,13 @@ public class TeamService {
 
         userTeamRepository.save(userTeam);
 
-        return new ModelMapper().map(savedTeam, TeamDto.class);
+        return modelMapper.map(savedTeam, TeamDto.class);
     }
 
     public List<TeamDto> getAllTeamsForUser(UUID userId) {
         List<UserTeam> userTeams = userTeamRepository.findByUserId(userId);
         List<Team> teams = userTeams.stream().map(UserTeam::getTeam).toList();
-        return new ModelMapper().map(teams, new TypeToken<List<TeamDto>>() {}.getType());
+        return modelMapper.map(teams, new TypeToken<List<TeamDto>>() {}.getType());
     }
 
     public List<TeamMemberDto> getAllTeamMembers(UUID teamId, TeamRole teamRole) {
@@ -118,9 +119,6 @@ public class TeamService {
         Team team = teamRepository.findById(request.getTeamId()).orElseThrow(
                 ()-> new CustomBadRequestException("Can't find team with id " + request.getTeamId())
         );
-
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
 
         modelMapper.map(request, team);
         teamRepository.save(team);

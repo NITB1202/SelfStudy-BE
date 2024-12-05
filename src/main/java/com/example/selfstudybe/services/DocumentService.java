@@ -31,6 +31,7 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final SubjectRepository subjectRepository;
     private final Cloudinary cloudinary;
+    private final ModelMapper modelMapper;
 
     public DocumentDto createNewDocument(CreateDocumentDto request) {
         User user = userRepository.findById(request.getUserId()).orElseThrow(
@@ -53,7 +54,7 @@ public class DocumentService {
 
         Document savedDocument = documentRepository.save(document);
 
-        return new ModelMapper().map(savedDocument, DocumentDto.class);
+        return modelMapper.map(savedDocument, DocumentDto.class);
     }
 
     public String uploadDocument(UUID documentId, MultipartFile multipartFile) throws IOException {
@@ -102,7 +103,7 @@ public class DocumentService {
         );
 
         List<Document> documents = documentRepository.findBySubject(subject);
-        return new ModelMapper().map(documents, new TypeToken<List<DocumentDto>>() {}.getType());
+        return modelMapper.map(documents, new TypeToken<List<DocumentDto>>() {}.getType());
     }
 
     public DocumentDto updateDocument(UUID id, String name) {
@@ -117,7 +118,7 @@ public class DocumentService {
 
         document.setName(name);
         documentRepository.save(document);
-        return new ModelMapper().map(document, DocumentDto.class);
+        return modelMapper.map(document, DocumentDto.class);
     }
 
     public void deleteDocument(UUID id) throws IOException {

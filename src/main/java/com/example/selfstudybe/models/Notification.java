@@ -9,7 +9,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -26,7 +26,7 @@ public class Notification {
     @NotNull
     @ColumnDefault("now()")
     @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -43,4 +43,7 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private NotificationType type;
+
+    @Column(name = "read")
+    private Boolean read;
 }

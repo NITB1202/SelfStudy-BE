@@ -30,6 +30,7 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final Cloudinary cloudinary;
+    private final ModelMapper modelMapper;
 
     public User getUserByEmail(String email) {
         User user = userRepository.findByEmail(email);
@@ -61,7 +62,7 @@ public class UserService {
         user.setRole(Role.ADMIN);
 
         userRepository.save(user);
-        return new ModelMapper().map(user, UserDto.class);
+        return modelMapper.map(user, UserDto.class);
     }
 
     public List<UserDto> searchUsers(String email, String username, Role role) {
@@ -86,7 +87,7 @@ public class UserService {
 
         List<User> users = userRepository.findAll(specification);
 
-        return new ModelMapper().map(users, new TypeToken<List<UserDto>>() {}.getType());
+        return modelMapper.map(users, new TypeToken<List<UserDto>>() {}.getType());
     }
 
     @Transactional
@@ -103,7 +104,7 @@ public class UserService {
 
         userRepository.save(user);
 
-        return new ModelMapper().map(user, UserDto.class);
+        return modelMapper.map(user, UserDto.class);
     }
 
     public String uploadAvatar(UUID id, MultipartFile file) throws IOException {

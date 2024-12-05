@@ -29,6 +29,7 @@ public class SubjectService {
     private final Cloudinary cloudinary;
     private final TeamRepository teamRepository;
     private final TeamSubjectRepository teamSubjectRepository;
+    private final ModelMapper modelMapper;
 
     public SubjectDto createUserSubject(CreateUserSubjectDto request) {
         User user = userRepository.findById(request.getUserId()).orElseThrow(
@@ -38,13 +39,13 @@ public class SubjectService {
         if(subjectRepository.existsByNameAndCreatorAndIsPersonal(request.getName(), user,true))
             throw new CustomBadRequestException("Subject already exists");
 
-        Subject subject = new ModelMapper().map(request, Subject.class);
+        Subject subject = modelMapper.map(request, Subject.class);
         subject.setCreator(user);
         subject.setIsPersonal(true);
 
         Subject savedSubject = subjectRepository.save(subject);
 
-        return new ModelMapper().map(savedSubject, SubjectDto.class);
+        return modelMapper.map(savedSubject, SubjectDto.class);
     }
 
     @Transactional
@@ -86,7 +87,7 @@ public class SubjectService {
 
         teamSubjectRepository.save(teamSubject);
 
-        return new ModelMapper().map(savedSubject, SubjectDto.class);
+        return modelMapper.map(savedSubject, SubjectDto.class);
     }
 
     public List<SubjectDto> getAllUserSubjects(UUID userId) {
@@ -95,7 +96,7 @@ public class SubjectService {
 
          List<Subject> subjects = subjectRepository.findByCreatorAndIsPersonal(user, true);
 
-         return new ModelMapper().map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
+         return modelMapper.map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
     }
 
     public List<SubjectDto> getAllTeamSubjects(UUID teamId) {
@@ -106,7 +107,7 @@ public class SubjectService {
         List<TeamSubject> teamSubjects = teamSubjectRepository.findByTeam(team);
         List<Subject> subjects = teamSubjects.stream().map(TeamSubject::getSubject).toList();
 
-        return new ModelMapper().map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
+        return modelMapper.map(subjects, new TypeToken<List<SubjectDto>>() {}.getType());
     }
 
     public SubjectDto updateSubject(UpdateSubjectDto request) {
@@ -117,9 +118,6 @@ public class SubjectService {
         // Check duplicated
         if(request.getName() != null && subjectRepository.existsByNameAndCreatorAndIsPersonal(request.getName(), subject.getCreator(), subject.getIsPersonal()))
             throw new CustomBadRequestException("Subject already exists");
-
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
 
         modelMapper.map(request, subject);
 

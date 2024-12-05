@@ -25,6 +25,7 @@ import java.util.UUID;
 public class TaskService {
     private final TaskRepository taskRepository;
     private final PlanRepository planRepository;
+    private final ModelMapper modelMapper;
 
     public TaskDto createTask(CreateTaskDto createTaskDto) {
         // Save new task
@@ -39,7 +40,7 @@ public class TaskService {
         if(plan.getEndDate().isBefore(LocalDateTime.now()))
             throw new CustomBadRequestException("Can't add a task to an expired plan");
 
-        Task task = new ModelMapper().map(createTaskDto, Task.class);
+        Task task = modelMapper.map(createTaskDto, Task.class);
         task.setPlan(plan);
         Task savedTask = taskRepository.save(task);
 
@@ -50,7 +51,7 @@ public class TaskService {
 
         planRepository.save(plan);
 
-        return new ModelMapper().map(savedTask, TaskDto.class);
+        return modelMapper.map(savedTask, TaskDto.class);
     }
 
     public List<TaskDto> getAllTasksForPlan(UUID planId) {
@@ -58,7 +59,7 @@ public class TaskService {
                 ()-> new CustomNotFoundException("Can't find plan with id "+planId));
 
         List<Task> tasks = taskRepository.findByPlan(plan);
-        return new ModelMapper().map(tasks,new TypeToken<List<TaskDto>>() {}.getType());
+        return modelMapper.map(tasks,new TypeToken<List<TaskDto>>() {}.getType());
     }
 
     public TaskDto updateTask(UpdateTaskDto updateTask) {
@@ -75,9 +76,6 @@ public class TaskService {
             throw new CustomBadRequestException("Can't update a task in an expired plan");
 
         // Save task
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
-
         modelMapper.map(updateTask, task);
         taskRepository.save(task);
 
@@ -89,7 +87,7 @@ public class TaskService {
 
         planRepository.save(plan);
 
-        return new ModelMapper().map(task, TaskDto.class);
+        return modelMapper.map(task, TaskDto.class);
     }
 
     public void deleteTask(UUID taskId) {
