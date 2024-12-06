@@ -5,12 +5,9 @@ import com.cloudinary.utils.ObjectUtils;
 import com.example.selfstudybe.dtos.Document.CreateDocumentDto;
 import com.example.selfstudybe.dtos.Document.DocumentDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
-import com.example.selfstudybe.models.Document;
-import com.example.selfstudybe.models.Subject;
-import com.example.selfstudybe.models.User;
-import com.example.selfstudybe.repositories.DocumentRepository;
-import com.example.selfstudybe.repositories.SubjectRepository;
-import com.example.selfstudybe.repositories.UserRepository;
+import com.example.selfstudybe.exception.CustomNotFoundException;
+import com.example.selfstudybe.models.*;
+import com.example.selfstudybe.repositories.*;
 import lombok.AllArgsConstructor;
 import org.hibernate.Hibernate;
 import org.modelmapper.ModelMapper;
@@ -32,6 +29,8 @@ public class DocumentService {
     private final SubjectRepository subjectRepository;
     private final Cloudinary cloudinary;
     private final ModelMapper modelMapper;
+    private final TeamSubjectRepository teamSubjectRepository;
+    private final TeamRepository teamRepository;
 
     public DocumentDto createNewDocument(CreateDocumentDto request) {
         User user = userRepository.findById(request.getUserId()).orElseThrow(
@@ -57,15 +56,23 @@ public class DocumentService {
         return modelMapper.map(savedDocument, DocumentDto.class);
     }
 
-    public String uploadDocument(UUID documentId, MultipartFile multipartFile) throws IOException {
+    public String uploadDocument(UUID documentId, MultipartFile multipartFile) throws Exception {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 ()-> new CustomBadRequestException("Can't find document with id " + documentId)
         );
+
+        float oldFileSize = 0;
 
         //Remove old file
         if(document.getDocLink() != null)
         {
             String publicId = document.getId() + "." + document.getExtension();
+
+            // Get file size in MB
+            Map<String, Object> resourceInfo = cloudinary.api().resource(publicId, ObjectUtils.asMap( "resource_type" ,"raw"));
+            Integer fileSizeInBytes = (Integer) resourceInfo.get("bytes");
+            oldFileSize = (float) (fileSizeInBytes / (1024.0 * 1024.0));
+
             cloudinary.uploader().destroy(publicId, ObjectUtils.asMap( "resource_type" ,"raw"));
         }
 
@@ -89,9 +96,15 @@ public class DocumentService {
 
         Map result = cloudinary.uploader().upload(multipartFile.getBytes(),params);
         String url = result.get("secure_url").toString();
+        Integer fileSizeInBytes = (Integer) result.get("bytes");
+        float fileSize = (float) (fileSizeInBytes / (1024.0 * 1024.0));
+
+        // Update usage
+        updateUsage(document,oldFileSize,fileSize);
 
         document.setDocLink(url);
         document.setExtension(extension);
+
         documentRepository.save(document);
 
         return url;
@@ -121,14 +134,53 @@ public class DocumentService {
         return modelMapper.map(document, DocumentDto.class);
     }
 
-    public void deleteDocument(UUID id) throws IOException {
+    public void deleteDocument(UUID id) throws Exception {
         Document document = documentRepository.findById(id).orElseThrow(
                 () -> new CustomBadRequestException("Can't find document with id " + id)
         );
 
         String publicId = id + "." + document.getExtension();
+
+        // Get file size in MB
+        Map<String, Object> resourceInfo = cloudinary.api().resource(publicId, ObjectUtils.asMap( "resource_type" ,"raw"));
+        Integer fileSizeInBytes = (Integer) resourceInfo.get("bytes");
+        float oldFileSize = (float) (fileSizeInBytes / (1024.0 * 1024.0));
+
         cloudinary.uploader().destroy(publicId, ObjectUtils.asMap( "resource_type" ,"raw"));
 
+        // Update usage
+        updateUsage(document,oldFileSize,0);
+
         documentRepository.delete(document);
+    }
+
+    private void updateUsage(Document document, float oldFileSize, float newFileSize) {
+        // Update usage
+        Subject subject = subjectRepository.findById(document.getSubject().getId()).orElseThrow(
+                () -> new CustomNotFoundException("Can't find subject with id " + document.getSubject().getId())
+        );
+        if(subject.getIsPersonal())
+        {
+            User user = userRepository.findById(document.getCreator().getId()).orElseThrow(
+                    () -> new CustomNotFoundException("Can't find user with id " + document.getCreator().getId())
+            );
+
+            float newUsage = user.getUsage() - oldFileSize + newFileSize;
+            float roundedUsage = Math.round(newUsage * 100.0f) / 100.0f;
+            user.setUsage(roundedUsage);
+
+            userRepository.save(user);
+        }
+        else
+        {
+            TeamSubject teamSubject = teamSubjectRepository.findBySubject(subject);
+            Team team = teamSubject.getTeam();
+
+            float newUsage = team.getUsage() - oldFileSize + newFileSize;
+            float roundedUsage = Math.round(newUsage * 100.0f) / 100.0f;
+            team.setUsage(roundedUsage);
+
+            teamRepository.save(team);
+        }
     }
 }

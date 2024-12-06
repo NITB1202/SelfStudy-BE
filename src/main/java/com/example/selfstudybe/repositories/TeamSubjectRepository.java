@@ -1,5 +1,6 @@
 package com.example.selfstudybe.repositories;
 
+import com.example.selfstudybe.models.Subject;
 import com.example.selfstudybe.models.Team;
 import com.example.selfstudybe.models.TeamSubject;
 import com.example.selfstudybe.models.TeamSubjectId;
@@ -11,4 +12,7 @@ import java.util.List;
 public interface TeamSubjectRepository extends JpaRepository<TeamSubject, TeamSubjectId> {
     @EntityGraph(attributePaths = {"subject"})
     List<TeamSubject> findByTeam(Team team);
+
+    @EntityGraph(attributePaths = {"team"})
+    TeamSubject findBySubject(Subject subject);
 }

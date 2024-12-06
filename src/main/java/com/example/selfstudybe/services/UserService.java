@@ -54,12 +54,10 @@ public class UserService {
         String hashPassword = new BCryptPasswordEncoder().encode(createUserDto.getPassword());
 
         // Create new user
-        User user = new User();
+        User user = modelMapper.map(createUserDto, User.class);
 
-        user.setEmail(createUserDto.getEmail());
-        user.setUsername(createUserDto.getUsername());
         user.setPassword(hashPassword);
-        user.setRole(Role.ADMIN);
+        user.setUsage(0f);
 
         userRepository.save(user);
         return modelMapper.map(user, UserDto.class);
@@ -96,9 +94,8 @@ public class UserService {
         if(updateUser.getEmail()!= null && updateUser.getEmail().equals(user.getEmail()))
             throw new CustomBadRequestException("This email has been used");
 
-        user.setEmail(Optional.ofNullable(updateUser.getEmail()).orElse(user.getEmail()));
-        user.setUsername(Optional.ofNullable(updateUser.getUsername()).orElse(user.getUsername()));
-        user.setRole(Optional.ofNullable(updateUser.getRole()).orElse(user.getRole()));
+        modelMapper.map(updateUser, user);
+
         if(updateUser.getPassword() != null)
             user.setPassword(new BCryptPasswordEncoder().encode(updateUser.getPassword()));
 

@@ -23,4 +23,6 @@ public class TeamDto {
     private LocalDateTime createdAt;
 
     private Integer num;
+
+    private Float usage;
 }

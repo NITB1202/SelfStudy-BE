@@ -43,4 +43,6 @@ public class Team {
     @Column(name = "image_link", length = Integer.MAX_VALUE)
     private String imageLink;
 
+    @Column(name = "usage")
+    private Float usage;
 }

@@ -38,7 +38,7 @@ public class DocumentController {
     @ApiResponse(responseCode = "200", description = "Upload successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<String> uploadDocument(@PathVariable UUID id, @RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<String> uploadDocument(@PathVariable UUID id, @RequestParam("file") MultipartFile file) throws Exception {
         return ResponseEntity.ok(documentService.uploadDocument(id,file));
     }
 
@@ -67,7 +67,7 @@ public class DocumentController {
     @ApiResponse(responseCode = "200", description = "Delete successfully")
     @ApiResponse(responseCode = "500", description = "Internal error", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<String> deleteDocument(@RequestParam UUID id) throws IOException {
+    public ResponseEntity<String> deleteDocument(@RequestParam UUID id) throws Exception {
         documentService.deleteDocument(id);
         return ResponseEntity.ok("Delete successfully");
     }

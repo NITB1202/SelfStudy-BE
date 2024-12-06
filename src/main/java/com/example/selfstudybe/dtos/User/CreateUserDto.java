@@ -10,20 +10,20 @@ import java.io.Serializable;
 
 @AllArgsConstructor
 @Getter @Setter
-public class CreateUserDto implements Serializable {
+public class CreateUserDto {
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
-    private final String email;
+    private String email;
 
     @NotBlank(message = "Username is required")
     @Size(max = 15, message = "Username must be fewer than 15 characters")
-    private final String username;
+    private String username;
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 15, message = "Password must be between 6 and 15 characters")
     @Pattern(regexp = "^[a-zA-Z0-9]*$", message = "Password must not contain special characters")
-    private final String password;
+    private String password;
 
     @NotNull(message = "Role is required")
-    private final Role role;
+    private Role role;
 }

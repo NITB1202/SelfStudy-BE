@@ -49,6 +49,7 @@ public class TeamService {
         team.setCreator(user);
         team.setCreatedAt(LocalDateTime.now());
         team.setNum(1);
+        team.setUsage(0f);
 
         Team savedTeam = teamRepository.save(team);
 

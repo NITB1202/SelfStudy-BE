@@ -30,6 +30,7 @@ public class SubjectService {
     private final TeamRepository teamRepository;
     private final TeamSubjectRepository teamSubjectRepository;
     private final ModelMapper modelMapper;
+    private final DocumentService documentService;
 
     public SubjectDto createUserSubject(CreateUserSubjectDto request) {
         User user = userRepository.findById(request.getUserId()).orElseThrow(
@@ -162,10 +163,7 @@ public class SubjectService {
         {
             List<Document> documents = documentRepository.findBySubject(subject);
             for(Document document : documents)
-            {
-                String publicId = document.getId() + "." + document.getExtension();
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
-            }
+                documentService.deleteDocument(document.getId());
             String folderPath = "Document/" + id;
             cloudinary.api().deleteFolder(folderPath, ObjectUtils.emptyMap());
         }
