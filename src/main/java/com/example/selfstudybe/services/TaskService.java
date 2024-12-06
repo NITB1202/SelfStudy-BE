@@ -46,8 +46,10 @@ public class TaskService {
 
         // Update plan process
         plan.setProcess(calculatePlanProcess(plan));
-        if(plan.getStatus().equals(PlanStatus.COMPLETE))
+        if(plan.getStatus().equals(PlanStatus.COMPLETE)) {
             plan.setStatus(PlanStatus.INCOMPLETE);
+            plan.setCompleteDate(null);
+        }
 
         planRepository.save(plan);
 

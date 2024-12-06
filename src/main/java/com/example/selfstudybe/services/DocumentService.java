@@ -8,6 +8,7 @@ import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.*;
 import com.example.selfstudybe.repositories.*;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.hibernate.Hibernate;
 import org.modelmapper.ModelMapper;
@@ -56,6 +57,7 @@ public class DocumentService {
         return modelMapper.map(savedDocument, DocumentDto.class);
     }
 
+    @Transactional
     public String uploadDocument(UUID documentId, MultipartFile multipartFile) throws Exception {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 ()-> new CustomBadRequestException("Can't find document with id " + documentId)
@@ -100,7 +102,8 @@ public class DocumentService {
         float fileSize = (float) (fileSizeInBytes / (1024.0 * 1024.0));
 
         // Update usage
-        updateUsage(document,oldFileSize,fileSize);
+        if(!updateUsage(document,oldFileSize,fileSize))
+            throw new CustomBadRequestException("Usage exceed 2GB. Please delete more documents to continue");
 
         document.setDocLink(url);
         document.setExtension(extension);
@@ -154,7 +157,7 @@ public class DocumentService {
         documentRepository.delete(document);
     }
 
-    private void updateUsage(Document document, float oldFileSize, float newFileSize) {
+    private boolean updateUsage(Document document, float oldFileSize, float newFileSize) {
         // Update usage
         Subject subject = subjectRepository.findById(document.getSubject().getId()).orElseThrow(
                 () -> new CustomNotFoundException("Can't find subject with id " + document.getSubject().getId())
@@ -166,10 +169,12 @@ public class DocumentService {
             );
 
             float newUsage = user.getUsage() - oldFileSize + newFileSize;
+            if(newUsage > 2048) return false;
             float roundedUsage = Math.round(newUsage * 100.0f) / 100.0f;
             user.setUsage(roundedUsage);
 
             userRepository.save(user);
+            return true;
         }
         else
         {
@@ -178,9 +183,11 @@ public class DocumentService {
 
             float newUsage = team.getUsage() - oldFileSize + newFileSize;
             float roundedUsage = Math.round(newUsage * 100.0f) / 100.0f;
+            if(newUsage > 2048) return false;
             team.setUsage(roundedUsage);
 
             teamRepository.save(team);
+            return true;
         }
     }
 }

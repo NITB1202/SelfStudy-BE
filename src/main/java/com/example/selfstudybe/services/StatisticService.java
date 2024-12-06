@@ -1,9 +1,11 @@
 package com.example.selfstudybe.services;
 
 import com.example.selfstudybe.enums.PlanStatus;
+import com.example.selfstudybe.enums.SessionStatus;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.Plan;
 import com.example.selfstudybe.models.PlanUser;
+import com.example.selfstudybe.models.StudySession;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.repositories.PlanRepository;
 import com.example.selfstudybe.repositories.PlanUserRepository;
@@ -29,44 +31,41 @@ public class StatisticService {
     private final UserRepository userRepository;
     private final StudySessionRepository studySessionRepository;
 
-//    public int getFinishedPlanInWeek(UUID userId) {
-//        User user = userRepository.findById(userId).orElseThrow(
-//                ()-> new CustomNotFoundException("Can't find user with id " + userId)
-//        );
-//
-//        List<PlanUser> planUsers = planUserRepository.findByAssignee(user);
-//        List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
-//
-//        int finishedPlanInWeek = 0;
-//
-//        for (Plan plan : plans) {
-//            if(inWeek(plan.getEndDate()) && plan.getStatus().equals(PlanStatus.COMPLETE))
-//                finishedPlanInWeek++;
-//        }
-//
-//        return finishedPlanInWeek;
-//    }
-//
-//    public LocalTime focusTimeInWeek(UUID userId) {
-//        if(!userRepository.existsById(userId))
-//            throw new CustomNotFoundException("Can't find user with id " + userId);
-//
-//        List<StudySession> sessions = studySessionRepository.findByUserId(userId);
-//        long totalTime = 0;
-//        LocalDateTime startOfWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-//                .atStartOfDay();
-//
-//        for (StudySession session : sessions) {
-//            if(session.getUpdateAt().isBefore(LocalDateTime.now()) && session.getUpdateAt().isAfter(startOfWeek)) {
-//                long focusTime = session.getFocusTime().toSecondOfDay();
-//                long timeLeft = session.getTimeLeft().toSecondOfDay();
-//                long realFocusTime = focusTime * (session.getCurrentStage()-1) + (focusTime-timeLeft);
-//                totalTime += realFocusTime;
-//            }
-//        }
-//
-//        return LocalTime.ofSecondOfDay(totalTime);
-//    }
+    public int getFinishedPlanInWeek(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find user with id " + userId)
+        );
+
+        List<PlanUser> planUsers = planUserRepository.findByAssignee(user);
+        List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
+
+        int finishedPlanInWeek = 0;
+
+        for (Plan plan : plans) {
+            if(inWeek(plan.getCompleteDate()))
+                finishedPlanInWeek++;
+        }
+
+        return finishedPlanInWeek;
+    }
+
+    public LocalTime focusTimeInWeek(UUID userId) {
+        if(!userRepository.existsById(userId))
+            throw new CustomNotFoundException("Can't find user with id " + userId);
+
+        List<StudySession> sessions = studySessionRepository.findByUserId(userId);
+        LocalTime totalTime = LocalTime.of(0, 0, 0);
+
+        for (StudySession session : sessions) {
+            LocalDateTime time = LocalDateTime.of(session.getDateCreate(), LocalTime.MIN);
+            if(inWeek(time)) {
+                long totalSeconds = totalTime.toSecondOfDay() + session.getEndTime().toSecondOfDay();
+                totalTime = LocalTime.ofSecondOfDay(totalSeconds);
+            }
+        }
+
+        return totalTime;
+    }
 
     public float levelOfCompletion(UUID userId) {
         User user = userRepository.findById(userId).orElseThrow(
@@ -82,7 +81,7 @@ public class StatisticService {
             if(inWeek(plan.getEndDate()))
             {
                 totalPlans++;
-                if(plan.getStatus().equals(PlanStatus.COMPLETE))
+                if(inWeek(plan.getCompleteDate()))
                     finishedPlans++;
             }
         }
@@ -90,19 +89,29 @@ public class StatisticService {
         return (float)finishedPlans/totalPlans;
     }
 
-//    public Map<String,Integer> focusChart(UUID userId) {
-//        if(!userRepository.existsById(userId))
-//            throw new CustomNotFoundException("Can't find user with id " + userId);
-//
-//        List<StudySession> sessions = studySessionRepository.findByUserId(userId);
-//        Map<DayOfWeek,LocalTime> weeklyStudyTime = sessions.stream()
-//                .collect(Collectors.groupingBy(
-//                        session -> session.getUpdateAt()
-//                ));
-//
-//    }
+    public float levelOfFinishedSession(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find user with id " + userId)
+        );
+
+        List<StudySession> studySessions = studySessionRepository.findByUserId(userId);
+        int totalSessions = 0;
+        int finishedSessions = 0;
+        for(StudySession session : studySessions) {
+            LocalDateTime time = LocalDateTime.of(session.getDateCreate(), LocalTime.MIN);
+            if(inWeek(time)) {
+                totalSessions++;
+                if(session.getStatus().equals(SessionStatus.COMPLETE))
+                    finishedSessions++;
+            }
+        }
+
+        return (float)finishedSessions/totalSessions;
+    }
 
     private boolean inWeek(LocalDateTime endDate) {
+        if(endDate == null) return false;
+
         LocalDate today = LocalDate.now();
         LocalDateTime startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .atStartOfDay();
