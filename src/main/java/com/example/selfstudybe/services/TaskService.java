@@ -82,8 +82,14 @@ public class TaskService {
         // Update plan process
         float process = calculatePlanProcess(plan);
         plan.setProcess(process);
-        if(process == 1) plan.setStatus(PlanStatus.COMPLETE);
-        else plan.setStatus(PlanStatus.INCOMPLETE);
+        if(process == 1) {
+            plan.setStatus(PlanStatus.COMPLETE);
+            plan.setCompleteDate(LocalDateTime.now());
+        }
+        else {
+            plan.setStatus(PlanStatus.INCOMPLETE);
+            plan.setCompleteDate(null);
+        }
 
         planRepository.save(plan);
 
@@ -103,8 +109,14 @@ public class TaskService {
 
         float process = calculatePlanProcess(plan);
         plan.setProcess(process);
-        if(process == 1) plan.setStatus(PlanStatus.COMPLETE);
-        else plan.setStatus(PlanStatus.INCOMPLETE);
+        if(process == 1) {
+            plan.setStatus(PlanStatus.COMPLETE);
+            plan.setCompleteDate(LocalDateTime.now());
+        }
+        else {
+            plan.setStatus(PlanStatus.INCOMPLETE);
+            plan.setCompleteDate(null);
+        }
 
         planRepository.save(plan);
     }

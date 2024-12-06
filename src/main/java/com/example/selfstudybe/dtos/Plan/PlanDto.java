@@ -36,4 +36,7 @@ public class PlanDto implements Serializable {
     private double process;
 
     private boolean personal;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime completeDate;
 }
