@@ -1,4 +1,9 @@
 services:
+  server:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
   redis:
     image: redis:latest
     container_name: redis
