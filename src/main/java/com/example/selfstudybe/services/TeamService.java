@@ -34,6 +34,7 @@ public class TeamService {
     private final TeamPlanRepository teamPlanRepository;
     private final TeamSubjectRepository teamSubjectRepository;
     private final ModelMapper modelMapper;
+    private final TeamMemberService teamMemberService;
 
     public TeamDto createNewTeam(CreateTeamDto request) {
         User user = userRepository.findById(request.getCreatorId()).orElseThrow(
@@ -84,15 +85,8 @@ public class TeamService {
             userTeams = userTeamRepository.findByTeamIdAndRole(teamId,teamRole);
 
         List<User> users = userTeams.stream().map(UserTeam::getUser).toList();
-        ModelMapper modelMapper = new ModelMapper();
-        List<TeamMemberDto> members = modelMapper.map(userTeams, new TypeToken<List<TeamMemberDto>>() {}.getType());
-        modelMapper.getConfiguration().setPropertyCondition(context -> context.getDestination() == null);
 
-        for(int i = 0; i < users.size(); i++){
-            modelMapper.map(users.get(i), members.get(i));
-        }
-
-        return members;
+        return teamMemberService.membersMapper(users,userTeams);
     }
 
     public String uploadTeamImage(UUID teamId, MultipartFile file) throws IOException {

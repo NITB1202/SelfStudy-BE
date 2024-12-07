@@ -16,4 +16,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, UserTeamId> 
     List<UserTeam> findByTeamId(UUID teamId);
     @EntityGraph(attributePaths = {"user"})
     List<UserTeam> findByTeamIdAndRole(UUID teamId, TeamRole role);
+    @EntityGraph(attributePaths = {"user"})
+    UserTeam findByTeamIdAndUserId(UUID teamId, UUID userId);
+    boolean existsByTeamIdAndUserId(UUID teamId, UUID userId);
 }

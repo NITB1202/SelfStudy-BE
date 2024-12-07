@@ -8,9 +8,13 @@ import com.example.selfstudybe.models.*;
 import com.example.selfstudybe.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -80,6 +84,24 @@ public class TeamMemberService {
         return userTeam.getRole().toString();
     }
 
+    public List<TeamMemberDto> getPlanAssignees(UUID planId){
+        Plan plan = planRepository.findById(planId).orElseThrow(
+                ()-> new CustomNotFoundException("Can't find plan with id " + planId)
+        );
+
+        TeamPlan teamPlan = teamPlanRepository.findByPlan(plan);
+        UUID teamId = teamPlan.getTeam().getId();
+
+        if(!teamPlanRepository.existsByTeamIdAndPlanId(teamId, planId))
+            throw new CustomBadRequestException("Invalid team id or plan id");
+
+        List<PlanUser> planUsers = planUserRepository.findByPlanId(planId);
+        List<User> users = planUsers.stream().map(PlanUser::getAssignee).toList();
+        List<UserTeam> userTeams = users.stream().map(user -> userTeamRepository.findByTeamIdAndUserId(teamId, user.getId())).toList();
+
+        return membersMapper(users, userTeams);
+    }
+
     @Transactional
     public void removeTeamMember(RemoveTeamMemberDto removeTeamMemberDto) {
         Team team = teamRepository.findById(removeTeamMemberDto.getTeamId()).orElseThrow(
@@ -102,6 +124,11 @@ public class TeamMemberService {
 
         team.setNum(team.getNum() - removeTeamMemberDto.getMemberIds().size());
         teamRepository.save(team);
+    }
+
+    public void removeAssignee(UUID planId, UUID userId) {
+        PlanUser planUser = planUserRepository.findByPlanIdAndAssigneeId(planId, userId);
+        planUserRepository.delete(planUser);
     }
 
     @Transactional
@@ -142,5 +169,17 @@ public class TeamMemberService {
 
             planUserRepository.save(planUser);
         }
+    }
+
+    public List<TeamMemberDto> membersMapper(List<User> users, List<UserTeam> userTeams){
+        ModelMapper modelMapper = new ModelMapper();
+        List<TeamMemberDto> members = modelMapper.map(userTeams, new TypeToken<List<TeamMemberDto>>() {}.getType());
+        modelMapper.getConfiguration().setPropertyCondition(context -> context.getDestination() == null);
+
+        for(int i = 0; i < users.size(); i++){
+            modelMapper.map(users.get(i), members.get(i));
+        }
+
+        return members;
     }
 }

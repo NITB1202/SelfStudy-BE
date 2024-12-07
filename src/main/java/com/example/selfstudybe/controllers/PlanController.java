@@ -1,9 +1,6 @@
 package com.example.selfstudybe.controllers;
 
-import com.example.selfstudybe.dtos.Plan.CreateTeamPlanDto;
-import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
-import com.example.selfstudybe.dtos.Plan.PlanDto;
-import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
+import com.example.selfstudybe.dtos.Plan.*;
 import com.example.selfstudybe.exception.ErrorResponse;
 import com.example.selfstudybe.services.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,8 +56,8 @@ public class PlanController {
     @ApiResponse(responseCode = "200", description = "Get successfully")
     @ApiResponse(responseCode = "404", description = "Not found", content =
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<List<PlanDto>> getTeamPlansOnDate(@RequestParam UUID id, @RequestParam LocalDate date) {
-        return ResponseEntity.ok(planService.getTeamPlansOnDate(id,date));
+    public ResponseEntity<List<TeamPlanDto>> getTeamPlansOnDate(@RequestParam UUID userId, @RequestParam UUID teamId, @RequestParam LocalDate date) {
+        return ResponseEntity.ok(planService.getTeamPlansOnDate(userId,teamId,date));
     }
 
     @GetMapping(value = "missed", produces = MediaType.APPLICATION_JSON_VALUE)

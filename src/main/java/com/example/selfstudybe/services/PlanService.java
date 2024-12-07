@@ -1,9 +1,6 @@
 package com.example.selfstudybe.services;
 
-import com.example.selfstudybe.dtos.Plan.CreateTeamPlanDto;
-import com.example.selfstudybe.dtos.Plan.CreateUserPlanDto;
-import com.example.selfstudybe.dtos.Plan.PlanDto;
-import com.example.selfstudybe.dtos.Plan.UpdatePlanDto;
+import com.example.selfstudybe.dtos.Plan.*;
 import com.example.selfstudybe.enums.PlanStatus;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
@@ -31,6 +28,7 @@ public class PlanService {
     private final TeamRepository teamRepository;
     private final TeamPlanRepository teamPlanRepository;
     private final ModelMapper modelMapper;
+    private final UserTeamRepository userTeamRepository;
 
     public PlanDto createUserPlan(CreateUserPlanDto request) {
         // Validate plan
@@ -114,16 +112,26 @@ public class PlanService {
         return modelMapper.map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
     }
 
-    public List<PlanDto> getTeamPlansOnDate(UUID teamId, LocalDate date) {
+    public List<TeamPlanDto> getTeamPlansOnDate(UUID userId, UUID teamId, LocalDate date) {
         Team team = teamRepository.findById(teamId).orElseThrow(
                 () -> new CustomNotFoundException("Can't find team with id " + teamId)
         );
 
+        if(!userTeamRepository.existsByTeamIdAndUserId(teamId, userId))
+            throw new CustomBadRequestException("This user is not in the team");
+
         List<TeamPlan> teamPlans = teamPlanRepository.findByTeam(team);
         List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
         List<Plan> plansOnDate = filterPlansOnDate(date, plans);
+        List<TeamPlanDto> result = new ArrayList<>();
 
-        return modelMapper.map(plansOnDate, new TypeToken<List<PlanDto>>() {}.getType());
+        for(Plan plan : plansOnDate) {
+            TeamPlanDto planDto = modelMapper.map(plan, TeamPlanDto.class);
+            planDto.setAssigned(planUserRepository.existsByPlanIdAndAssigneeId(plan.getId(), userId));
+            result.add(planDto);
+        }
+
+        return result;
     }
 
     public List<PlanDto> getUserMissedPlans(UUID userId) {

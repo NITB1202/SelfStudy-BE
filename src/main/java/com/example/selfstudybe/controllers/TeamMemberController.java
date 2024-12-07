@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,6 +40,15 @@ public class TeamMemberController {
         return ResponseEntity.ok(teamMemberService.getUserRole(teamId, userId));
     }
 
+    @GetMapping("plan")
+    @Operation(summary = "Get plan assignees")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<List<TeamMemberDto>> getPlanAssignees(@RequestParam UUID planId) {
+        return ResponseEntity.ok(teamMemberService.getPlanAssignees(planId));
+    }
+
     @PutMapping
     @Operation(summary = "Update team member's role")
     @ApiResponse(responseCode = "200", description = "Update successfully")
@@ -58,6 +68,14 @@ public class TeamMemberController {
         @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<String> removeTeamMember(@Valid @RequestBody RemoveTeamMemberDto removeTeamMemberDto) {
         teamMemberService.removeTeamMember(removeTeamMemberDto);
+        return ResponseEntity.ok("Remove successfully");
+    }
+
+    @DeleteMapping("plan")
+    @Operation(summary = "Remove assignee from the team's plan")
+    @ApiResponse(responseCode = "200", description = "Remove successfully")
+    public ResponseEntity<String> removeAssignee(@RequestParam UUID planId, @RequestParam UUID userId) {
+        teamMemberService.removeAssignee(planId, userId);
         return ResponseEntity.ok("Remove successfully");
     }
 

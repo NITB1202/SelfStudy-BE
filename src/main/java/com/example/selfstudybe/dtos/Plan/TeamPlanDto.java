@@ -2,20 +2,18 @@ package com.example.selfstudybe.dtos.Plan;
 
 import com.example.selfstudybe.enums.PlanStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
 @NoArgsConstructor
 @Getter @Setter
-public class PlanDto implements Serializable {
+public class TeamPlanDto {
     private UUID id;
 
     private String name;
@@ -37,4 +35,6 @@ public class PlanDto implements Serializable {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime completeDate;
+
+    private Boolean assigned;
 }
