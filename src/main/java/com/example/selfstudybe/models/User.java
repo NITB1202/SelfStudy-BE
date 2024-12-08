@@ -30,7 +30,6 @@ public class User {
     @Column(name = "username", nullable = false, length = Integer.MAX_VALUE)
     private String username;
 
-    @NotNull
     @Column(name = "password", nullable = false, length = Integer.MAX_VALUE)
     private String password;
 

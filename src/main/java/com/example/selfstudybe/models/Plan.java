@@ -57,6 +57,9 @@ public class Plan {
     @Column(name = "complete_date")
     private LocalDateTime completeDate;
 
+    @Column(name = "description")
+    private String description;
+
     @OneToMany(mappedBy = "plan")
     private Set<Notification> notifications = new LinkedHashSet<>();
 

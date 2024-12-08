@@ -5,10 +5,12 @@ import com.example.selfstudybe.dtos.Authentication.Request.VerificationRequest;
 import com.example.selfstudybe.dtos.Authentication.Response.AuthResponse;
 import com.example.selfstudybe.dtos.Authentication.Response.GoogleResponse;
 import com.example.selfstudybe.dtos.Authentication.Response.UserInfo;
+import com.example.selfstudybe.enums.Role;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.exception.ErrorResponse;
 import com.example.selfstudybe.models.User;
+import com.example.selfstudybe.repositories.UserRepository;
 import com.example.selfstudybe.security.CustomAuthenticationManager;
 import com.example.selfstudybe.services.EmailService;
 import com.example.selfstudybe.services.UserService;
@@ -55,23 +57,15 @@ public class AuthenticationController {
     private final EmailService emailService;
     private final RedisTemplate<String, String> redisTemplate;
     private final int waitMinutes = 2;
+    private final UserRepository userRepository;
 
     @PostMapping(value ="login", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Login")
     @ApiResponse(responseCode = "200", description = "Login successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
-    public ResponseEntity<AuthResponse> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
-                                                  @Valid @RequestBody AuthRequest authRequest, BindingResult bindingResult,
-                                              HttpServletRequest request, HttpServletResponse response ) throws JOSEException {
-        // If inputs are invalid
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            throw new CustomBadRequestException(String.join(", ", errors));
-        }
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest, HttpServletRequest request, HttpServletResponse response ) throws JOSEException {
 
         String accessToken = JwtUtil.extractAccessTokenFromCookie(request);
 
@@ -191,9 +185,19 @@ public class AuthenticationController {
             // Get user's information
             UserInfo userInfo = getUserInfoFromGoogle(accessToken);
             String email = userInfo.getEmail();
-            User user = userService.getUserByEmail(email);
-            if(user == null)
-                throw new CustomNotFoundException("This user hasn't registered yet");
+            User user = userRepository.findByEmail(email);
+            if(user == null) {
+                // Create new user with given email
+                User newUser = new User();
+                newUser.setEmail(email);
+                newUser.setUsername(userInfo.getName());
+                newUser.setRole(Role.USER);
+                newUser.setUsage(0f);
+
+                userRepository.save(newUser);
+
+                user = newUser;
+            }
 
             // Set authentication
             List<GrantedAuthority> roles = List.of(new SimpleGrantedAuthority(user.getRole().toString()));

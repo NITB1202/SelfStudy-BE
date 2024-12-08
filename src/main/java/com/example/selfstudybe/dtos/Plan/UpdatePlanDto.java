@@ -19,8 +19,9 @@ public class UpdatePlanDto {
     @NotNull(message = "Plan id is required")
     private UUID planId;
 
-    @NotBlank(message = "Name can't be blank")
     private String name;
+
+    private String description;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startDate;

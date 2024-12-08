@@ -11,10 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -134,6 +131,28 @@ public class PlanService {
         return result;
     }
 
+    public List<LocalDate> getDatesHasDeadlineInMonth(UUID userId, int month, int year) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomNotFoundException("Can't find user with id " + userId)
+        );
+
+        List<PlanUser> planUsers = planUserRepository.findByAssignee(user);
+        List<Plan> plans = planUsers.stream().map(PlanUser::getPlan).toList();
+
+        return filterDateHasDeadline(plans, month, year);
+    }
+
+    public List<LocalDate> getDatesTeamHasDeadlineInMonth(UUID teamId, int month, int year) {
+        Team team = teamRepository.findById(teamId).orElseThrow(
+                () -> new CustomNotFoundException("Can't find team with id " + teamId)
+        );
+
+        List<TeamPlan> teamPlans = teamPlanRepository.findByTeam(team);
+        List<Plan> plans = teamPlans.stream().map(TeamPlan::getPlan).toList();
+
+        return filterDateHasDeadline(plans, month, year);
+    }
+
     public List<PlanDto> getUserMissedPlans(UUID userId) {
         // Find user
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
@@ -210,5 +229,24 @@ public class PlanService {
         }
 
         return response;
+    }
+
+    public List<LocalDate> filterDateHasDeadline(List<Plan> plans, int month, int year) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDateTime firstDayOfMonth = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime lastDayOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        List<LocalDate> result = new ArrayList<>();
+
+        for(Plan plan : plans) {
+            LocalDateTime endDate = plan.getEndDate();
+            if((endDate.isAfter(firstDayOfMonth) || endDate.isEqual(firstDayOfMonth)) &&
+                    (endDate.isBefore(lastDayOfMonth) || endDate.isEqual(lastDayOfMonth))) {
+                LocalDate date = endDate.toLocalDate();
+                if(!result.contains(date)) result.add(date);
+            }
+        }
+
+        return result;
     }
 }

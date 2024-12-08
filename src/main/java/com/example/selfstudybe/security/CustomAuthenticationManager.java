@@ -1,5 +1,6 @@
 package com.example.selfstudybe.security;
 
+import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.services.UserService;
@@ -30,6 +31,9 @@ public class CustomAuthenticationManager implements AuthenticationManager {
         User user = userService.getUserByEmail(username);
         if(user == null)
             throw new CustomNotFoundException("Can't find user with email: " + username);
+
+        if(user.getPassword() == null)
+            throw new CustomBadRequestException("This user has registered with google account");
 
         if(passwordEncoder.matches(password, user.getPassword())) {
             List<GrantedAuthority> roles = List.of(new SimpleGrantedAuthority(user.getRole().toString()));

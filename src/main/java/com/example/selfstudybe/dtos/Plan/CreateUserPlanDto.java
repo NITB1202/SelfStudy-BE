@@ -21,6 +21,8 @@ public class CreateUserPlanDto {
     @NotBlank(message = "Name is required")
     private String name;
 
+    private String description;
+
     @NotNull(message = "Start date is required")
     private LocalDateTime startDate;
 
