@@ -12,7 +12,7 @@ COPY --chmod=0755 mvnw mvnw
 COPY .mvn/ .mvn/
 
 # Download dependencies using cache for Maven repository.
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
     ./mvnw dependency:go-offline -DskipTests
 
 ################################################################################
@@ -26,7 +26,7 @@ COPY pom.xml pom.xml
 COPY ./src src/
 
 # Build the application using Maven cache.
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
     ./mvnw package -DskipTests && \
     mv target/$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)-$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout).jar target/app.jar
 
