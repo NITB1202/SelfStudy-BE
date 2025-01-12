@@ -1,17 +1,18 @@
 # syntax=docker/dockerfile:1
 
+# Định nghĩa argument cho BUILD_ID
+ARG BUILD_ID
+
 # Stage 1: Dependency resolution
 FROM eclipse-temurin:21-jdk-jammy as deps
 
-# Set the working directory
 WORKDIR /build
 
-# Copy the Maven wrapper and project files
 COPY ./mvnw /build/mvnw
 COPY .mvn/ /build/.mvn/
 COPY pom.xml /build/pom.xml
 
-# Download dependencies using a cache
+# Sử dụng BUILD_ID làm cache key
 RUN --mount=type=cache,id=maven-cache-${BUILD_ID},target=/root/.m2 \
     ./mvnw dependency:go-offline -DskipTests
 
@@ -22,7 +23,6 @@ FROM deps as build
 
 WORKDIR /build
 
-# Copy the source code
 COPY ./src /build/src
 
 # Build the application
@@ -45,20 +45,15 @@ RUN java -Djarmode=layertools -jar target/app.jar extract --destination target/e
 # Stage 4: Final image for running the application
 FROM eclipse-temurin:21-jre-jammy as final
 
-# Set the working directory
 WORKDIR /app
 
-# Copy environment variables (if any)
 COPY .env /app/.env
 
-# Copy extracted layers from the build stage
 COPY --from=extract /build/target/extracted/dependencies/ /app/
 COPY --from=extract /build/target/extracted/spring-boot-loader/ /app/
 COPY --from=extract /build/target/extracted/snapshot-dependencies/ /app/
 COPY --from=extract /build/target/extracted/application/ /app/
 
-# Expose the default application port
 EXPOSE 8080
 
-# Set the default entrypoint
 ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
