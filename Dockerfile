@@ -1,59 +1,66 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1
 
-################################################################################
-
-# Create a stage for resolving and downloading dependencies.
+# Stage 1: Dependency resolution
 FROM eclipse-temurin:21-jdk-jammy as deps
 
+# Set the working directory
 WORKDIR /build
 
-# Copy the mvnw wrapper with executable permissions.
-COPY --chmod=0755 mvnw mvnw
-COPY .mvn/ .mvn/
+# Copy the Maven wrapper and project files
+COPY ./mvnw /build/mvnw
+COPY .mvn/ /build/.mvn/
+COPY pom.xml /build/pom.xml
 
-# Download dependencies using cache for Maven repository.
+# Download dependencies using a cache
 RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
     ./mvnw dependency:go-offline -DskipTests
 
 ################################################################################
 
-# Create a stage for building the application based on the stage with downloaded dependencies.
-FROM deps as package
+# Stage 2: Build the application
+FROM deps as build
 
 WORKDIR /build
 
-COPY pom.xml pom.xml
-COPY ./src src/
+# Copy the source code
+COPY ./src /build/src
 
-# Build the application using Maven cache.
+# Build the application
 RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
     ./mvnw package -DskipTests && \
     mv target/$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)-$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout).jar target/app.jar
 
 ################################################################################
 
-# Create a stage for extracting the application into separate layers.
-FROM package as extract
+# Stage 3: Extract layers for Spring Boot optimization
+FROM build as extract
 
 WORKDIR /build
 
+# Extract the application layers
 RUN java -Djarmode=layertools -jar target/app.jar extract --destination target/extracted
 
 ################################################################################
 
-# Create a new stage for running the application.
-FROM eclipse-temurin:21-jre-jammy AS final
+# Stage 4: Final image for running the application
+FROM eclipse-temurin:21-jre-jammy as final
 
-COPY .env /app/.env
-
+# Set the working directory
 WORKDIR /app
 
-# Copy the executable from the "package" stage.
-COPY --from=extract /build/target/extracted/dependencies/ ./
-COPY --from=extract /build/target/extracted/spring-boot-loader/ ./
-COPY --from=extract /build/target/extracted/snapshot-dependencies/ ./
-COPY --from=extract /build/target/extracted/application/ ./
+# Copy environment variables (if any)
+COPY .env /app/.env
 
+# Copy extracted layers from the build stage
+COPY --from=extract /build/target/extracted/dependencies/ /app/
+COPY --from=extract /build/target/extracted/spring-boot-loader/ /app/
+COPY --from=extract /build/target/extracted/snapshot-dependencies/ /app/
+COPY --from=extract /build/target/extracted/application/ /app/
+
+# Expose the default application port
 EXPOSE 8080
 
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+# Set the default entrypoint
+ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+
+
