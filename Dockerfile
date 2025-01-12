@@ -12,7 +12,7 @@ COPY .mvn/ /build/.mvn/
 COPY pom.xml /build/pom.xml
 
 # Download dependencies using a cache
-RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
+RUN --mount=type=cache,id=maven-cache-${BUILD_ID},target=/root/.m2 \
     ./mvnw dependency:go-offline -DskipTests
 
 ################################################################################
@@ -26,7 +26,7 @@ WORKDIR /build
 COPY ./src /build/src
 
 # Build the application
-RUN --mount=type=cache,id=maven-cache,target=/root/.m2 \
+RUN --mount=type=cache,id=maven-cache-${BUILD_ID},target=/root/.m2 \
     ./mvnw package -DskipTests && \
     mv target/$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)-$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout).jar target/app.jar
 
@@ -62,5 +62,3 @@ EXPOSE 8080
 
 # Set the default entrypoint
 ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
-
-
