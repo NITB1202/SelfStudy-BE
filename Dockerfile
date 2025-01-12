@@ -9,6 +9,9 @@ COPY pom.xml .
 COPY mvnw . 
 COPY .mvn .mvn
 
+# Cấp quyền thực thi cho mvnw
+RUN chmod +x mvnw
+
 # Tải các dependencies của ứng dụng
 RUN ./mvnw dependency:go-offline
 
@@ -32,5 +35,3 @@ EXPOSE 8080
 
 # Lệnh để chạy ứng dụng
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-
-
