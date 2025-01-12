@@ -12,6 +12,9 @@ COPY .mvn .mvn
 # Cấp quyền thực thi cho mvnw
 RUN chmod +x mvnw
 
+# Sao chép tệp .env vào container
+COPY .env .env
+
 # Tải các dependencies của ứng dụng
 RUN ./mvnw dependency:go-offline
 
@@ -29,6 +32,9 @@ WORKDIR /app
 
 # Sao chép file JAR từ container build vào container chạy
 COPY --from=build /app/target/*.jar app.jar
+
+# Sao chép tệp .env từ container build vào container chạy (nếu cần)
+COPY --from=build /app/.env .env
 
 # Cổng mà ứng dụng Spring Boot sẽ chạy
 EXPOSE 8080
