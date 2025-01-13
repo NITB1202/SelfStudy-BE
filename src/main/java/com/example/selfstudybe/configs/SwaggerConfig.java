@@ -2,7 +2,7 @@ package com.example.selfstudybe.configs;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import org.springdoc.core.customizers.OpenApiCustomizer;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,10 +11,12 @@ import org.springframework.context.annotation.Configuration;
 public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().info(new Info()
-                .title("StudyPal API")
-                .description("API for self-study mobile application.")
-                .version("1.0"));
+        return new OpenAPI()
+                .addServersItem(new Server().url("https://selfstudy.up.railway.app"))
+                .info(new Info()
+                    .title("StudyPal API")
+                    .description("API for self-study mobile application.")
+                    .version("1.0"));
     }
 
     @Bean
