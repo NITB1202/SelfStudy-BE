@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/team")
+@RequestMapping("team")
 public class TeamController {
     private final TeamService teamService;
 

@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/invitation")
+@RequestMapping("invitation")
 public class InvitationController {
     private final InvitationService invitationService;
 

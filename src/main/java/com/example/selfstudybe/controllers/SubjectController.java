@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/subject")
+@RequestMapping("subject")
 public class SubjectController {
     private final SubjectService subjectService;
 

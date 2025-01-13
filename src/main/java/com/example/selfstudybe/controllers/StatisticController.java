@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/statistic")
+@RequestMapping("statistic")
 public class StatisticController {
     private final StatisticService statisticService;
 

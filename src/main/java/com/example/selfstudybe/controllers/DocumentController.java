@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/document")
+@RequestMapping("document")
 public class DocumentController {
     private final DocumentService documentService;
 

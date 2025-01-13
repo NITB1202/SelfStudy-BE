@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/session")
+@RequestMapping("session")
 public class StudySessionController {
     private final StudySessionService studySessionService;
 

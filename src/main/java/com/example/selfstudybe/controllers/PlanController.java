@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/plan")
+@RequestMapping("plan")
 public class PlanController {
     private final PlanService planService;
 

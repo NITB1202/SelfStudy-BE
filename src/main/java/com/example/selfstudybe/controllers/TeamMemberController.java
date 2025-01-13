@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("v1/member")
+@RequestMapping("member")
 public class TeamMemberController {
     private final TeamMemberService teamMemberService;
 

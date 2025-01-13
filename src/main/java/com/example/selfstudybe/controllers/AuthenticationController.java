@@ -48,7 +48,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("v1/auth")
+@RequestMapping("auth")
 @AllArgsConstructor
 public class AuthenticationController {
     private final UserService userService;
