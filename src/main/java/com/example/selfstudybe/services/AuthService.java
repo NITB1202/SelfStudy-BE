@@ -7,6 +7,7 @@ import com.example.selfstudybe.dtos.Authentication.Response.GoogleResponse;
 import com.example.selfstudybe.dtos.Authentication.Response.UserInfo;
 import com.example.selfstudybe.enums.Role;
 import com.example.selfstudybe.exception.CustomBadRequestException;
+import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.repositories.UserRepository;
 import com.example.selfstudybe.security.CustomAuthenticationManager;
@@ -104,7 +105,7 @@ public class AuthService {
 
     public String sendVerificationCode(String email){
         if(userRepository.findByEmail(email) == null)
-            throw new CustomBadRequestException("Can't find user with email "+ email);
+            throw new CustomNotFoundException("Can't find user with email "+ email);
 
         int waitMinutes = 2;
         String code = generateRandomCode();
