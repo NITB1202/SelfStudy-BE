@@ -4,7 +4,6 @@ import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
 import com.example.selfstudybe.repositories.UserRepository;
-import com.example.selfstudybe.services.UserService;
 import com.example.selfstudybe.util.JwtUtil;
 import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.FilterChain;
@@ -28,7 +27,6 @@ import java.util.UUID;
 @Component
 @AllArgsConstructor
 public class CustomFilter extends OncePerRequestFilter {
-    private final UserService userService;
     private final UserRepository userRepository;
 
     @Override
@@ -43,7 +41,7 @@ public class CustomFilter extends OncePerRequestFilter {
             User user = userRepository.findById(UUID.fromString(userId)).orElse(null);
 
             if(user == null)
-                throw new CustomBadRequestException("Can't find user with id " + userId);
+                throw new CustomNotFoundException("Can't find user with id " + userId);
 
             generateAuthenticationFromUser(user);
         }

@@ -40,6 +40,6 @@ public class CustomAuthenticationManager implements AuthenticationManager {
             return new UsernamePasswordAuthenticationToken(username, password, roles);
         }
 
-        throw new CustomNotFoundException("Incorrect password");
+        throw new CustomBadRequestException("Incorrect password");
     }
 }

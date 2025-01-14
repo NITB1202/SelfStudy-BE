@@ -29,6 +29,8 @@ public class AuthenticationController {
     @ApiResponse(responseCode = "200", description = "Login successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are required")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest) throws JOSEException {
         return ResponseEntity.ok(authService.login(authRequest));
@@ -53,6 +55,8 @@ public class AuthenticationController {
     @Operation(summary = "Send a verification code to the user's email address")
     @ApiResponse(responseCode = "200", description = "Send successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request body", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    @ApiResponse(responseCode = "404", description = "Not found", content =
             { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
     public ResponseEntity<String> sendVerificationCode(@Valid @RequestParam @Email String email) {
         String code = authService.sendVerificationCode(email);
