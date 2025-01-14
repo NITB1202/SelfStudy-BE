@@ -38,6 +38,15 @@ public class UserController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get the user's information by id")
+    @ApiResponse(responseCode = "200", description = "Get successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<UserDto> getUserById(@RequestParam UUID id) {
+        return ResponseEntity.ok(userService.getUserByUserId(id));
+    }
+
+    @GetMapping(value = "search", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Find all users that match the query parameters")
     @ApiResponse(responseCode = "200", description = "Find successfully")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "All fields are optional")

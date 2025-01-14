@@ -1,9 +1,9 @@
 package com.example.selfstudybe.security;
 
-import com.example.selfstudybe.dtos.User.UserDto;
 import com.example.selfstudybe.exception.CustomBadRequestException;
 import com.example.selfstudybe.exception.CustomNotFoundException;
 import com.example.selfstudybe.models.User;
+import com.example.selfstudybe.repositories.UserRepository;
 import com.example.selfstudybe.services.UserService;
 import com.example.selfstudybe.util.JwtUtil;
 import com.nimbusds.jose.JOSEException;
@@ -29,6 +29,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CustomFilter extends OncePerRequestFilter {
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -37,11 +38,12 @@ public class CustomFilter extends OncePerRequestFilter {
         {
             // If access token is valid
             Jwt jwt = JwtUtil.getJwtDecoder().decode(accessToken);
-            String email = jwt.getClaimAsString("username");
+            String userId = jwt.getSubject();
 
-            User user = userService.getUserByEmail(email);
+            User user = userRepository.findById(UUID.fromString(userId)).orElse(null);
+
             if(user == null)
-                throw new CustomBadRequestException("Can't find user with email: " + email);
+                throw new CustomBadRequestException("Can't find user with id " + userId);
 
             generateAuthenticationFromUser(user);
         }
@@ -53,7 +55,7 @@ public class CustomFilter extends OncePerRequestFilter {
             Jwt jwt = JwtUtil.getJwtDecoder().decode(refreshToken);
             String userId = jwt.getSubject();
 
-            User user = userService.getUserByUserId(UUID.fromString(userId));
+            User user = userRepository.findById(UUID.fromString(userId)).orElse(null);
             if(user == null)
                 throw new CustomNotFoundException("Can't find user with id " + userId);
 

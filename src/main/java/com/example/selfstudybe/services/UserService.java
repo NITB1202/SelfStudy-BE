@@ -39,8 +39,9 @@ public class UserService {
         return user;
     }
 
-    public User getUserByUserId(UUID userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
+    public UserDto getUserByUserId(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomNotFoundException("Can't find user with id " + userId));
+        return modelMapper.map(user, UserDto.class) ;
     }
 
     @Transactional

@@ -29,7 +29,7 @@ public class SecurityConfig {
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/v1/auth/google"))
+                        .loginPage("/auth/google"))
                 .authenticationManager(authenticationManager)
                 .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
