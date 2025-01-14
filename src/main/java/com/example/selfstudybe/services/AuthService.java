@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Service;
@@ -124,6 +125,17 @@ public class AuthService {
         }
 
         return false;
+    }
+
+    public void resetPassword(String email, String password){
+        User user = userRepository.findByEmail(email);
+        if(user == null)
+            throw new CustomNotFoundException("Can't find user with email "+ email);
+
+        String hashPassword = new BCryptPasswordEncoder().encode(password);
+        user.setPassword(hashPassword);
+
+        userRepository.save(user);
     }
 
     private UserInfo getUserInfoFromGoogle(String accessToken) {

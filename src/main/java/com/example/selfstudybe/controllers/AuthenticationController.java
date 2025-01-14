@@ -74,4 +74,14 @@ public class AuthenticationController {
             return ResponseEntity.ok("Verification successful");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Verification failed");
     }
+
+    @PostMapping("reset")
+    @Operation(summary = "Change user's password")
+    @ApiResponse(responseCode = "200", description = "Update successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+            { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)) })
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody AuthRequest request) {
+        authService.resetPassword(request.getEmail(), request.getPassword());
+        return ResponseEntity.ok("Password reset successful");
+    }
 }
