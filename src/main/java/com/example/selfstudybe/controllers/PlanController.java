@@ -136,4 +136,13 @@ public class PlanController {
         planService.deletePlan(id);
         return ResponseEntity.ok("Delete successfully");
     }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get plan by id")
+    @ApiResponse(responseCode = "200", description = "Delete successfully")
+    @ApiResponse(responseCode = "404", description = "Not found", content =
+        @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<PlanDto> getById(@RequestParam UUID id) {
+        return ResponseEntity.ok(planService.getPlanById(id));
+    }
 }

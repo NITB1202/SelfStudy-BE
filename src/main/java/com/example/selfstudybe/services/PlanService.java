@@ -249,4 +249,11 @@ public class PlanService {
 
         return result;
     }
+
+    public PlanDto getPlanById(UUID planId) {
+        Plan plan = planRepository.findById(planId).orElseThrow(
+                () -> new CustomNotFoundException("Can't find plan with id " + planId)
+        );
+        return modelMapper.map(plan, PlanDto.class);
+    }
 }
