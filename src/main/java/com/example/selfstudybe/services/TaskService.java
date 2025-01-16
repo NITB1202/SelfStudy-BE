@@ -69,10 +69,6 @@ public class TaskService {
                 ()-> new CustomNotFoundException("Can't find task with id " + updateTask.getTaskId()));
         Plan plan = task.getPlan();
 
-        // Check duplicated
-        if(updateTask.getName() != null && taskRepository.existsByNameAndPlan(updateTask.getName(),plan))
-            throw new CustomBadRequestException("Task with name " + updateTask.getName()+" already exists");
-
         // Check valid plan
         if(plan.getEndDate().isBefore(LocalDateTime.now()))
             throw new CustomBadRequestException("Can't update a task in an expired plan");
